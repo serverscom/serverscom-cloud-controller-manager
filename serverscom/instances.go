@@ -206,6 +206,10 @@ func (i *instances) InstanceExistsByProviderID(ctx context.Context, providerID s
 	case cloudInstanceType:
 		cloudInstance, err := i.client.CloudComputingInstances.Get(ctx, instanceID)
 		if err != nil {
+			if isNotFoundError(err) {
+				return false, nil
+			}
+
 			return false, fmt.Errorf("can't get cloud instance: %s", err.Error())
 		}
 
@@ -213,6 +217,10 @@ func (i *instances) InstanceExistsByProviderID(ctx context.Context, providerID s
 	case dedicatedServerType:
 		host, err := i.client.Hosts.GetDedicatedServer(ctx, instanceID)
 		if err != nil {
+			if isNotFoundError(err) {
+				return false, nil
+			}
+
 			return false, fmt.Errorf("can't get dedicated server: %s", err.Error())
 		}
 
@@ -220,6 +228,10 @@ func (i *instances) InstanceExistsByProviderID(ctx context.Context, providerID s
 	case kubernetesBaremetalNodeType:
 		host, err := i.client.Hosts.GetKubernetesBaremetalNode(ctx, instanceID)
 		if err != nil {
+			if isNotFoundError(err) {
+				return false, nil
+			}
+
 			return false, fmt.Errorf("can't get kubernetes baremetal node: %s", err.Error())
 		}
 
