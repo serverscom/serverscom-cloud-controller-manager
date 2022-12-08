@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/golang/mock v1.6.0
 	github.com/onsi/gomega v1.24.1
-	github.com/serverscom/serverscom-go-client v0.1.0
+	github.com/serverscom/serverscom-go-client v1.0.0
 	github.com/spf13/pflag v1.0.5
 	k8s.io/api v0.25.4
 	k8s.io/apimachinery v0.25.4
@@ -102,5 +102,3 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect
 	sigs.k8s.io/yaml v1.2.0 // indirect
 )
-
-replace github.com/serverscom/serverscom-go-client => /Users/kirillzaitsev/Documents/go/src/github.com/serverscom/serverscom-go-client
