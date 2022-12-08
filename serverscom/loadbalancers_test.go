@@ -382,3 +382,193 @@ func TestLoadBalancers_EnsureLoadBalancerWithCreate(t *testing.T) {
 	g.Expect(err).To(BeNil())
 	g.Expect(status).NotTo(BeNil())
 }
+
+func TestLoadBalancers_UpdateLoadBalancer(t *testing.T) {
+	g := NewGomegaWithT(t)
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	collection := serverscom_testing.NewMockCollection[serverscom.LoadBalancer](ctrl)
+	service := serverscom_testing.NewMockLoadBalancersService(ctrl)
+
+	balancerName := "service-a123"
+	locationID := int64(1)
+
+	balancer := serverscom.LoadBalancer{
+		ID:   "a",
+		Name: balancerName,
+	}
+
+	l4Balancer := serverscom.L4LoadBalancer{
+		ID:                "a",
+		Name:              balancerName,
+		Status:            "active",
+		ExternalAddresses: []string{"127.0.0.1", "127.0.0.2"},
+	}
+
+	ctx := context.TODO()
+
+	input := serverscom.L4LoadBalancerUpdateInput{
+		Name: &balancerName,
+		VHostZones: []serverscom.L4VHostZoneInput{
+			{
+				ID:                   "k8s-nodes-80-tcp",
+				UDP:                  false,
+				ProxyProtocolEnabled: false,
+				Ports:                []int32{80},
+				Description:          nil,
+				UpstreamID:           "k8s-nodes-80-tcp",
+			},
+			{
+				ID:                   "k8s-nodes-11211-udp",
+				UDP:                  true,
+				ProxyProtocolEnabled: false,
+				Ports:                []int32{11211},
+				Description:          nil,
+				UpstreamID:           "k8s-nodes-11211-udp",
+			},
+		},
+		UpstreamZones: []serverscom.L4UpstreamZoneInput{
+			{
+				ID:         "k8s-nodes-80-tcp",
+				Method:     nil,
+				UDP:        false,
+				HCInterval: nil,
+				HCJitter:   nil,
+				Upstreams: []serverscom.L4UpstreamInput{
+					{
+						IP:     "127.0.0.100",
+						Port:   30200,
+						Weight: 1,
+					},
+				},
+			},
+			{
+				ID:         "k8s-nodes-11211-udp",
+				Method:     nil,
+				UDP:        false,
+				HCInterval: nil,
+				HCJitter:   nil,
+				Upstreams: []serverscom.L4UpstreamInput{
+					{
+						IP:     "127.0.0.100",
+						Port:   30201,
+						Weight: 1,
+					},
+				},
+			},
+		},
+	}
+
+	collection.EXPECT().SetPerPage(100).Return(collection)
+	collection.EXPECT().SetParam("search_pattern", balancerName).Return(collection)
+	collection.EXPECT().SetParam("type", "l4").Return(collection)
+	collection.EXPECT().Collect(ctx).Return([]serverscom.LoadBalancer{balancer}, nil)
+
+	service.EXPECT().Collection().Return(collection)
+	service.EXPECT().GetL4LoadBalancer(ctx, "a").Return(&l4Balancer, nil)
+	service.EXPECT().UpdateL4LoadBalancer(ctx, "a", input).Return(&l4Balancer, nil)
+
+	client := serverscom.NewClient("some")
+	client.LoadBalancers = service
+
+	srv := v1.Service{}
+	srv.UID = "123"
+	srv.Spec.Ports = []v1.ServicePort{
+		{Port: 80, Protocol: "TCP", NodePort: 30200},
+		{Port: 11211, Protocol: "UDP", NodePort: 30201},
+	}
+
+	node := v1.Node{}
+	node.Status.Addresses = []v1.NodeAddress{
+		{Address: "node1.example.com", Type: v1.NodeHostName},
+		{Address: "127.0.0.50", Type: v1.NodeExternalIP},
+		{Address: "127.0.0.100", Type: v1.NodeInternalIP},
+	}
+
+	balancerInterface := newLoadBalancers(client, &locationID)
+	status, err := balancerInterface.EnsureLoadBalancer(ctx, "cluster", &srv, []*v1.Node{&node})
+
+	g.Expect(err).To(BeNil())
+	g.Expect(status).NotTo(BeNil())
+}
+
+func TestLoadBalancers_EnsureLoadBalancerDeleted(t *testing.T) {
+	g := NewGomegaWithT(t)
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	collection := serverscom_testing.NewMockCollection[serverscom.LoadBalancer](ctrl)
+	service := serverscom_testing.NewMockLoadBalancersService(ctrl)
+
+	balancerName := "service-a123"
+
+	balancer := serverscom.LoadBalancer{
+		ID:   "a",
+		Name: balancerName,
+	}
+
+	ctx := context.TODO()
+
+	collection.EXPECT().SetPerPage(100).Return(collection)
+	collection.EXPECT().SetParam("search_pattern", balancerName).Return(collection)
+	collection.EXPECT().SetParam("type", "l4").Return(collection)
+	collection.EXPECT().Collect(ctx).Return([]serverscom.LoadBalancer{balancer}, nil)
+
+	service.EXPECT().Collection().Return(collection)
+	service.EXPECT().GetL4LoadBalancer(ctx, "a").Return(&serverscom.L4LoadBalancer{ID: "a", Name: balancerName, Status: "in_process", ExternalAddresses: []string{"127.0.0.1", "127.0.0.2"}}, nil)
+	service.EXPECT().DeleteL4LoadBalancer(ctx, "a").Return(nil)
+
+	client := serverscom.NewClient("some")
+	client.LoadBalancers = service
+
+	srv := v1.Service{}
+	srv.UID = "123"
+	srv.Spec.Ports = []v1.ServicePort{
+		{Port: 80, Protocol: "TCP", NodePort: 30200},
+		{Port: 11211, Protocol: "UDP", NodePort: 30201},
+	}
+
+	balancerInterface := newLoadBalancers(client, nil)
+	err := balancerInterface.EnsureLoadBalancerDeleted(ctx, "cluster", &srv)
+
+	g.Expect(err).To(BeNil())
+}
+
+func TestLoadBalancers_EnsureLoadBalancerDeletedWhenBalancerAlreadyDeleted(t *testing.T) {
+	g := NewGomegaWithT(t)
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	collection := serverscom_testing.NewMockCollection[serverscom.LoadBalancer](ctrl)
+	service := serverscom_testing.NewMockLoadBalancersService(ctrl)
+
+	balancerName := "service-a123"
+
+	ctx := context.TODO()
+
+	collection.EXPECT().SetPerPage(100).Return(collection)
+	collection.EXPECT().SetParam("search_pattern", balancerName).Return(collection)
+	collection.EXPECT().SetParam("type", "l4").Return(collection)
+	collection.EXPECT().Collect(ctx).Return([]serverscom.LoadBalancer{}, nil)
+
+	service.EXPECT().Collection().Return(collection)
+
+	client := serverscom.NewClient("some")
+	client.LoadBalancers = service
+
+	srv := v1.Service{}
+	srv.UID = "123"
+	srv.Spec.Ports = []v1.ServicePort{
+		{Port: 80, Protocol: "TCP", NodePort: 30200},
+		{Port: 11211, Protocol: "UDP", NodePort: 30201},
+	}
+
+	balancerInterface := newLoadBalancers(client, nil)
+	err := balancerInterface.EnsureLoadBalancerDeleted(ctx, "cluster", &srv)
+
+	g.Expect(err).To(BeNil())
+}
