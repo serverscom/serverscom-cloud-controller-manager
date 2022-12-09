@@ -6,7 +6,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/serverscom/serverscom-go-client/pkg"
+	cli "github.com/serverscom/serverscom-go-client/pkg"
 	cloudprovider "k8s.io/cloud-provider"
 )
 
@@ -28,7 +28,7 @@ func init() {
 }
 
 type cloud struct {
-	client *serverscom.Client
+	client *cli.Client
 
 	loadBalancers cloudprovider.LoadBalancer
 	instances     cloudprovider.Instances
@@ -43,12 +43,12 @@ func newCloud(config io.Reader) (cloudprovider.Interface, error) {
 
 	baseUrl := os.Getenv(baseUrkEnvKey)
 
-	var client *serverscom.Client
+	var client *cli.Client
 
 	if baseUrl == "" {
-		client = serverscom.NewClient(token)
+		client = cli.NewClient(token)
 	} else {
-		client = serverscom.NewClientWithEndpoint(token, baseUrl)
+		client = cli.NewClientWithEndpoint(token, baseUrl)
 	}
 
 	client.SetupUserAgent(fmt.Sprintf("serverscom-cloud-controller-manager/%s", controllerVersion))

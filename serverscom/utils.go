@@ -5,7 +5,7 @@ import (
 	"regexp"
 	"strings"
 
-	serverscom "github.com/serverscom/serverscom-go-client/pkg"
+	cli "github.com/serverscom/serverscom-go-client/pkg"
 	v1 "k8s.io/api/core/v1"
 
 	"k8s.io/klog/v2"
@@ -24,7 +24,7 @@ var providerIDRE = regexp.MustCompile(`^` + providerName + `://([^/]+)/([^/]+)$`
 
 func isNotFoundError(err error) bool {
 	switch err.(type) {
-	case *serverscom.NotFoundError:
+	case *cli.NotFoundError:
 		return true
 	default:
 		return false
@@ -48,7 +48,7 @@ func parseProviderID(providerID string) (string, string, error) {
 	return matches[1], matches[2], nil
 }
 
-func collectCloudInstanceAddresses(cloudInstance *serverscom.CloudComputingInstance) []v1.NodeAddress {
+func collectCloudInstanceAddresses(cloudInstance *cli.CloudComputingInstance) []v1.NodeAddress {
 	var addresses []v1.NodeAddress
 
 	addresses = append(addresses, v1.NodeAddress{Address: cloudInstance.Name, Type: v1.NodeHostName})
@@ -83,7 +83,7 @@ func collectCloudInstanceAddresses(cloudInstance *serverscom.CloudComputingInsta
 	return addresses
 }
 
-func collectHostAddresses(host *serverscom.Host) []v1.NodeAddress {
+func collectHostAddresses(host *cli.Host) []v1.NodeAddress {
 	var addresses []v1.NodeAddress
 
 	addresses = append(addresses, v1.NodeAddress{Address: host.Title, Type: v1.NodeHostName})

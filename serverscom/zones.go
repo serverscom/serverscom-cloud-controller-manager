@@ -4,17 +4,17 @@ import (
 	"context"
 	"fmt"
 
-	serverscom "github.com/serverscom/serverscom-go-client/pkg"
+	cli "github.com/serverscom/serverscom-go-client/pkg"
 	"k8s.io/apimachinery/pkg/types"
 	cloudprovider "k8s.io/cloud-provider"
 )
 
 type zones struct {
-	client      *serverscom.Client
+	client      *cli.Client
 	defaultZone string
 }
 
-func newZones(client *serverscom.Client, defaultZone string) *zones {
+func newZones(client *cli.Client, defaultZone string) *zones {
 	return &zones{client, defaultZone}
 }
 

@@ -3,11 +3,12 @@ package serverscom
 import (
 	"context"
 	"fmt"
-	serverscom "github.com/serverscom/serverscom-go-client/pkg"
-	v1 "k8s.io/api/core/v1"
-	cloudprovider "k8s.io/cloud-provider"
 	"strconv"
 	"strings"
+
+	cli "github.com/serverscom/serverscom-go-client/pkg"
+	v1 "k8s.io/api/core/v1"
+	cloudprovider "k8s.io/cloud-provider"
 )
 
 const (
@@ -17,11 +18,11 @@ const (
 )
 
 type loadBalancers struct {
-	client            *serverscom.Client
+	client            *cli.Client
 	defaultLocationID *int64
 }
 
-func newLoadBalancers(client *serverscom.Client, defaultLocationID *int64) cloudprovider.LoadBalancer {
+func newLoadBalancers(client *cli.Client, defaultLocationID *int64) cloudprovider.LoadBalancer {
 	return &loadBalancers{client: client, defaultLocationID: defaultLocationID}
 }
 
@@ -69,7 +70,7 @@ func (l *loadBalancers) EnsureLoadBalancer(ctx context.Context, clusterName stri
 			return nil, err
 		}
 
-		input := serverscom.L4LoadBalancerCreateInput{}
+		input := cli.L4LoadBalancerCreateInput{}
 		input.VHostZones = vhostZones
 		input.UpstreamZones = upstreamZones
 		input.LocationID = locationID
@@ -83,7 +84,7 @@ func (l *loadBalancers) EnsureLoadBalancer(ctx context.Context, clusterName stri
 	} else {
 		name := l.GetLoadBalancerName(ctx, clusterName, service)
 
-		input := serverscom.L4LoadBalancerUpdateInput{}
+		input := cli.L4LoadBalancerUpdateInput{}
 		input.VHostZones = vhostZones
 		input.UpstreamZones = upstreamZones
 		input.Name = &name
@@ -110,7 +111,7 @@ func (l *loadBalancers) UpdateLoadBalancer(ctx context.Context, clusterName stri
 
 	name := l.GetLoadBalancerName(ctx, clusterName, service)
 
-	input := serverscom.L4LoadBalancerUpdateInput{}
+	input := cli.L4LoadBalancerUpdateInput{}
 	input.VHostZones = vhostZones
 	input.UpstreamZones = upstreamZones
 	input.Name = &name
@@ -136,7 +137,7 @@ func (l *loadBalancers) EnsureLoadBalancerDeleted(ctx context.Context, clusterNa
 	return l.client.LoadBalancers.DeleteL4LoadBalancer(ctx, loadBalancer.ID)
 }
 
-func (l *loadBalancers) findLoadBalancerByName(ctx context.Context, clusterName string, service *v1.Service) (*serverscom.L4LoadBalancer, error) {
+func (l *loadBalancers) findLoadBalancerByName(ctx context.Context, clusterName string, service *v1.Service) (*cli.L4LoadBalancer, error) {
 	name := l.GetLoadBalancerName(ctx, clusterName, service)
 
 	loadBalancers, err := l.client.LoadBalancers.Collection().
@@ -150,14 +151,14 @@ func (l *loadBalancers) findLoadBalancerByName(ctx context.Context, clusterName 
 	}
 
 	if len(loadBalancers) == 0 {
-		return nil, &serverscom.NotFoundError{
+		return nil, &cli.NotFoundError{
 			StatusCode: 404,
 			ErrorCode:  "NOT_FOUND",
 			Message:    "Empty load balancers list",
 		}
 	}
 
-	var currentLoadBalancer *serverscom.LoadBalancer
+	var currentLoadBalancer *cli.LoadBalancer
 
 	for _, loadBalancer := range loadBalancers {
 		if loadBalancer.Name == name {
@@ -172,9 +173,9 @@ func (l *loadBalancers) findLoadBalancerByName(ctx context.Context, clusterName 
 	return l.client.LoadBalancers.GetL4LoadBalancer(ctx, currentLoadBalancer.ID)
 }
 
-func (l *loadBalancers) buildZones(service *v1.Service, nodes []*v1.Node) ([]serverscom.L4VHostZoneInput, []serverscom.L4UpstreamZoneInput, error) {
-	var vhostZoneInputs []serverscom.L4VHostZoneInput
-	var upstreamZoneInputs []serverscom.L4UpstreamZoneInput
+func (l *loadBalancers) buildZones(service *v1.Service, nodes []*v1.Node) ([]cli.L4VHostZoneInput, []cli.L4UpstreamZoneInput, error) {
+	var vhostZoneInputs []cli.L4VHostZoneInput
+	var upstreamZoneInputs []cli.L4UpstreamZoneInput
 
 	for _, port := range service.Spec.Ports {
 		if port.Protocol != "TCP" && port.Protocol != "UDP" {
@@ -183,7 +184,7 @@ func (l *loadBalancers) buildZones(service *v1.Service, nodes []*v1.Node) ([]ser
 
 		id := fmt.Sprintf("k8s-nodes-%d-%s", port.Port, strings.ToLower(string(port.Protocol)))
 
-		vhostZoneInput := serverscom.L4VHostZoneInput{}
+		vhostZoneInput := cli.L4VHostZoneInput{}
 		vhostZoneInput.ID = id
 		vhostZoneInput.UpstreamID = id
 		vhostZoneInput.Ports = append(vhostZoneInput.Ports, port.Port)
@@ -192,7 +193,7 @@ func (l *loadBalancers) buildZones(service *v1.Service, nodes []*v1.Node) ([]ser
 			vhostZoneInput.UDP = true
 		}
 
-		upstreamZoneInput := serverscom.L4UpstreamZoneInput{}
+		upstreamZoneInput := cli.L4UpstreamZoneInput{}
 		upstreamZoneInput.ID = id
 
 		for _, node := range nodes {
@@ -201,7 +202,7 @@ func (l *loadBalancers) buildZones(service *v1.Service, nodes []*v1.Node) ([]ser
 					continue
 				}
 
-				upstreamZoneInput.Upstreams = append(upstreamZoneInput.Upstreams, serverscom.L4UpstreamInput{
+				upstreamZoneInput.Upstreams = append(upstreamZoneInput.Upstreams, cli.L4UpstreamInput{
 					IP:     address.Address,
 					Weight: 1,
 					Port:   port.NodePort,
@@ -237,7 +238,7 @@ func (l *loadBalancers) extractLocationID(service *v1.Service) (int64, error) {
 	return locationID, nil
 }
 
-func (l *loadBalancers) buildResult(service *v1.Service, loadBalancer *serverscom.L4LoadBalancer) *v1.LoadBalancerStatus {
+func (l *loadBalancers) buildResult(service *v1.Service, loadBalancer *cli.L4LoadBalancer) *v1.LoadBalancerStatus {
 	hostname, ok := service.Annotations[loadBalancerHostnameAnnotation]
 	if ok && hostname != "" {
 		return &v1.LoadBalancerStatus{

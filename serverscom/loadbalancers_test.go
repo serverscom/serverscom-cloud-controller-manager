@@ -7,7 +7,7 @@ import (
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/gomega"
 	serverscom_testing "github.com/serverscom/cloud-controller-manager/serverscom/testing"
-	serverscom "github.com/serverscom/serverscom-go-client/pkg"
+	cli "github.com/serverscom/serverscom-go-client/pkg"
 	v1 "k8s.io/api/core/v1"
 )
 
@@ -17,13 +17,13 @@ func TestLoadBalancers_GetLoadBalancer(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	collection := serverscom_testing.NewMockCollection[serverscom.LoadBalancer](ctrl)
+	collection := serverscom_testing.NewMockCollection[cli.LoadBalancer](ctrl)
 	service := serverscom_testing.NewMockLoadBalancersService(ctrl)
 
 	balancerName := "service-a123"
 	locationID := int64(1)
 
-	balancer := serverscom.LoadBalancer{
+	balancer := cli.LoadBalancer{
 		ID:   "a",
 		Name: balancerName,
 	}
@@ -33,12 +33,12 @@ func TestLoadBalancers_GetLoadBalancer(t *testing.T) {
 	collection.EXPECT().SetPerPage(100).Return(collection)
 	collection.EXPECT().SetParam("search_pattern", balancerName).Return(collection)
 	collection.EXPECT().SetParam("type", "l4").Return(collection)
-	collection.EXPECT().Collect(ctx).Return([]serverscom.LoadBalancer{balancer}, nil)
+	collection.EXPECT().Collect(ctx).Return([]cli.LoadBalancer{balancer}, nil)
 
 	service.EXPECT().Collection().Return(collection)
-	service.EXPECT().GetL4LoadBalancer(ctx, "a").Return(&serverscom.L4LoadBalancer{Name: balancerName, Status: "active", ExternalAddresses: []string{"127.0.0.1", "127.0.0.2"}}, nil)
+	service.EXPECT().GetL4LoadBalancer(ctx, "a").Return(&cli.L4LoadBalancer{Name: balancerName, Status: "active", ExternalAddresses: []string{"127.0.0.1", "127.0.0.2"}}, nil)
 
-	client := serverscom.NewClient("some")
+	client := cli.NewClient("some")
 	client.LoadBalancers = service
 
 	srv := v1.Service{}
@@ -61,13 +61,13 @@ func TestLoadBalancers_GetLoadBalancerNonActive(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	collection := serverscom_testing.NewMockCollection[serverscom.LoadBalancer](ctrl)
+	collection := serverscom_testing.NewMockCollection[cli.LoadBalancer](ctrl)
 	service := serverscom_testing.NewMockLoadBalancersService(ctrl)
 
 	balancerName := "service-a123"
 	locationID := int64(1)
 
-	balancer := serverscom.LoadBalancer{
+	balancer := cli.LoadBalancer{
 		ID:   "a",
 		Name: balancerName,
 	}
@@ -77,12 +77,12 @@ func TestLoadBalancers_GetLoadBalancerNonActive(t *testing.T) {
 	collection.EXPECT().SetPerPage(100).Return(collection)
 	collection.EXPECT().SetParam("search_pattern", balancerName).Return(collection)
 	collection.EXPECT().SetParam("type", "l4").Return(collection)
-	collection.EXPECT().Collect(ctx).Return([]serverscom.LoadBalancer{balancer}, nil)
+	collection.EXPECT().Collect(ctx).Return([]cli.LoadBalancer{balancer}, nil)
 
 	service.EXPECT().Collection().Return(collection)
-	service.EXPECT().GetL4LoadBalancer(ctx, "a").Return(&serverscom.L4LoadBalancer{Name: balancerName, Status: "in_process", ExternalAddresses: []string{"127.0.0.1", "127.0.0.2"}}, nil)
+	service.EXPECT().GetL4LoadBalancer(ctx, "a").Return(&cli.L4LoadBalancer{Name: balancerName, Status: "in_process", ExternalAddresses: []string{"127.0.0.1", "127.0.0.2"}}, nil)
 
-	client := serverscom.NewClient("some")
+	client := cli.NewClient("some")
 	client.LoadBalancers = service
 
 	srv := v1.Service{}
@@ -103,7 +103,7 @@ func TestLoadBalancers_GetLoadBalancerEmptyList(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	collection := serverscom_testing.NewMockCollection[serverscom.LoadBalancer](ctrl)
+	collection := serverscom_testing.NewMockCollection[cli.LoadBalancer](ctrl)
 	service := serverscom_testing.NewMockLoadBalancersService(ctrl)
 
 	balancerName := "service-a123"
@@ -114,11 +114,11 @@ func TestLoadBalancers_GetLoadBalancerEmptyList(t *testing.T) {
 	collection.EXPECT().SetPerPage(100).Return(collection)
 	collection.EXPECT().SetParam("search_pattern", balancerName).Return(collection)
 	collection.EXPECT().SetParam("type", "l4").Return(collection)
-	collection.EXPECT().Collect(ctx).Return([]serverscom.LoadBalancer{}, nil)
+	collection.EXPECT().Collect(ctx).Return([]cli.LoadBalancer{}, nil)
 
 	service.EXPECT().Collection().Return(collection)
 
-	client := serverscom.NewClient("some")
+	client := cli.NewClient("some")
 	client.LoadBalancers = service
 
 	srv := v1.Service{}
@@ -136,7 +136,7 @@ func TestLoadBalancers_GetLoadBalancerName(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	locationID := int64(1)
-	client := serverscom.NewClient("some")
+	client := cli.NewClient("some")
 	ctx := context.TODO()
 
 	srv := v1.Service{}
@@ -152,7 +152,7 @@ func TestLoadBalancers_GetLoadBalancerNameWithAnnotation(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	locationID := int64(1)
-	client := serverscom.NewClient("some")
+	client := cli.NewClient("some")
 	ctx := context.TODO()
 
 	srv := v1.Service{}
@@ -172,18 +172,18 @@ func TestLoadBalancers_EnsureLoadBalancer(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	collection := serverscom_testing.NewMockCollection[serverscom.LoadBalancer](ctrl)
+	collection := serverscom_testing.NewMockCollection[cli.LoadBalancer](ctrl)
 	service := serverscom_testing.NewMockLoadBalancersService(ctrl)
 
 	balancerName := "service-a123"
 	locationID := int64(1)
 
-	balancer := serverscom.LoadBalancer{
+	balancer := cli.LoadBalancer{
 		ID:   "a",
 		Name: balancerName,
 	}
 
-	l4Balancer := serverscom.L4LoadBalancer{
+	l4Balancer := cli.L4LoadBalancer{
 		ID:                "a",
 		Name:              balancerName,
 		Status:            "active",
@@ -192,9 +192,9 @@ func TestLoadBalancers_EnsureLoadBalancer(t *testing.T) {
 
 	ctx := context.TODO()
 
-	input := serverscom.L4LoadBalancerUpdateInput{
+	input := cli.L4LoadBalancerUpdateInput{
 		Name: &balancerName,
-		VHostZones: []serverscom.L4VHostZoneInput{
+		VHostZones: []cli.L4VHostZoneInput{
 			{
 				ID:                   "k8s-nodes-80-tcp",
 				UDP:                  false,
@@ -212,14 +212,14 @@ func TestLoadBalancers_EnsureLoadBalancer(t *testing.T) {
 				UpstreamID:           "k8s-nodes-11211-udp",
 			},
 		},
-		UpstreamZones: []serverscom.L4UpstreamZoneInput{
+		UpstreamZones: []cli.L4UpstreamZoneInput{
 			{
 				ID:         "k8s-nodes-80-tcp",
 				Method:     nil,
 				UDP:        false,
 				HCInterval: nil,
 				HCJitter:   nil,
-				Upstreams: []serverscom.L4UpstreamInput{
+				Upstreams: []cli.L4UpstreamInput{
 					{
 						IP:     "127.0.0.100",
 						Port:   30200,
@@ -233,7 +233,7 @@ func TestLoadBalancers_EnsureLoadBalancer(t *testing.T) {
 				UDP:        false,
 				HCInterval: nil,
 				HCJitter:   nil,
-				Upstreams: []serverscom.L4UpstreamInput{
+				Upstreams: []cli.L4UpstreamInput{
 					{
 						IP:     "127.0.0.100",
 						Port:   30201,
@@ -247,13 +247,13 @@ func TestLoadBalancers_EnsureLoadBalancer(t *testing.T) {
 	collection.EXPECT().SetPerPage(100).Return(collection)
 	collection.EXPECT().SetParam("search_pattern", balancerName).Return(collection)
 	collection.EXPECT().SetParam("type", "l4").Return(collection)
-	collection.EXPECT().Collect(ctx).Return([]serverscom.LoadBalancer{balancer}, nil)
+	collection.EXPECT().Collect(ctx).Return([]cli.LoadBalancer{balancer}, nil)
 
 	service.EXPECT().Collection().Return(collection)
 	service.EXPECT().GetL4LoadBalancer(ctx, "a").Return(&l4Balancer, nil)
 	service.EXPECT().UpdateL4LoadBalancer(ctx, "a", input).Return(&l4Balancer, nil)
 
-	client := serverscom.NewClient("some")
+	client := cli.NewClient("some")
 	client.LoadBalancers = service
 
 	srv := v1.Service{}
@@ -283,13 +283,13 @@ func TestLoadBalancers_EnsureLoadBalancerWithCreate(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	collection := serverscom_testing.NewMockCollection[serverscom.LoadBalancer](ctrl)
+	collection := serverscom_testing.NewMockCollection[cli.LoadBalancer](ctrl)
 	service := serverscom_testing.NewMockLoadBalancersService(ctrl)
 
 	balancerName := "service-a123"
 	locationID := int64(1)
 
-	l4Balancer := serverscom.L4LoadBalancer{
+	l4Balancer := cli.L4LoadBalancer{
 		ID:                "a",
 		Name:              balancerName,
 		Status:            "active",
@@ -298,10 +298,10 @@ func TestLoadBalancers_EnsureLoadBalancerWithCreate(t *testing.T) {
 
 	ctx := context.TODO()
 
-	input := serverscom.L4LoadBalancerCreateInput{
+	input := cli.L4LoadBalancerCreateInput{
 		Name:       balancerName,
 		LocationID: locationID,
-		VHostZones: []serverscom.L4VHostZoneInput{
+		VHostZones: []cli.L4VHostZoneInput{
 			{
 				ID:                   "k8s-nodes-80-tcp",
 				UDP:                  false,
@@ -319,14 +319,14 @@ func TestLoadBalancers_EnsureLoadBalancerWithCreate(t *testing.T) {
 				UpstreamID:           "k8s-nodes-11211-udp",
 			},
 		},
-		UpstreamZones: []serverscom.L4UpstreamZoneInput{
+		UpstreamZones: []cli.L4UpstreamZoneInput{
 			{
 				ID:         "k8s-nodes-80-tcp",
 				Method:     nil,
 				UDP:        false,
 				HCInterval: nil,
 				HCJitter:   nil,
-				Upstreams: []serverscom.L4UpstreamInput{
+				Upstreams: []cli.L4UpstreamInput{
 					{
 						IP:     "127.0.0.100",
 						Port:   30200,
@@ -340,7 +340,7 @@ func TestLoadBalancers_EnsureLoadBalancerWithCreate(t *testing.T) {
 				UDP:        false,
 				HCInterval: nil,
 				HCJitter:   nil,
-				Upstreams: []serverscom.L4UpstreamInput{
+				Upstreams: []cli.L4UpstreamInput{
 					{
 						IP:     "127.0.0.100",
 						Port:   30201,
@@ -354,12 +354,12 @@ func TestLoadBalancers_EnsureLoadBalancerWithCreate(t *testing.T) {
 	collection.EXPECT().SetPerPage(100).Return(collection)
 	collection.EXPECT().SetParam("search_pattern", balancerName).Return(collection)
 	collection.EXPECT().SetParam("type", "l4").Return(collection)
-	collection.EXPECT().Collect(ctx).Return([]serverscom.LoadBalancer{}, nil)
+	collection.EXPECT().Collect(ctx).Return([]cli.LoadBalancer{}, nil)
 
 	service.EXPECT().Collection().Return(collection)
 	service.EXPECT().CreateL4LoadBalancer(ctx, input).Return(&l4Balancer, nil)
 
-	client := serverscom.NewClient("some")
+	client := cli.NewClient("some")
 	client.LoadBalancers = service
 
 	srv := v1.Service{}
@@ -389,18 +389,18 @@ func TestLoadBalancers_UpdateLoadBalancer(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	collection := serverscom_testing.NewMockCollection[serverscom.LoadBalancer](ctrl)
+	collection := serverscom_testing.NewMockCollection[cli.LoadBalancer](ctrl)
 	service := serverscom_testing.NewMockLoadBalancersService(ctrl)
 
 	balancerName := "service-a123"
 	locationID := int64(1)
 
-	balancer := serverscom.LoadBalancer{
+	balancer := cli.LoadBalancer{
 		ID:   "a",
 		Name: balancerName,
 	}
 
-	l4Balancer := serverscom.L4LoadBalancer{
+	l4Balancer := cli.L4LoadBalancer{
 		ID:                "a",
 		Name:              balancerName,
 		Status:            "active",
@@ -409,9 +409,9 @@ func TestLoadBalancers_UpdateLoadBalancer(t *testing.T) {
 
 	ctx := context.TODO()
 
-	input := serverscom.L4LoadBalancerUpdateInput{
+	input := cli.L4LoadBalancerUpdateInput{
 		Name: &balancerName,
-		VHostZones: []serverscom.L4VHostZoneInput{
+		VHostZones: []cli.L4VHostZoneInput{
 			{
 				ID:                   "k8s-nodes-80-tcp",
 				UDP:                  false,
@@ -429,14 +429,14 @@ func TestLoadBalancers_UpdateLoadBalancer(t *testing.T) {
 				UpstreamID:           "k8s-nodes-11211-udp",
 			},
 		},
-		UpstreamZones: []serverscom.L4UpstreamZoneInput{
+		UpstreamZones: []cli.L4UpstreamZoneInput{
 			{
 				ID:         "k8s-nodes-80-tcp",
 				Method:     nil,
 				UDP:        false,
 				HCInterval: nil,
 				HCJitter:   nil,
-				Upstreams: []serverscom.L4UpstreamInput{
+				Upstreams: []cli.L4UpstreamInput{
 					{
 						IP:     "127.0.0.100",
 						Port:   30200,
@@ -450,7 +450,7 @@ func TestLoadBalancers_UpdateLoadBalancer(t *testing.T) {
 				UDP:        false,
 				HCInterval: nil,
 				HCJitter:   nil,
-				Upstreams: []serverscom.L4UpstreamInput{
+				Upstreams: []cli.L4UpstreamInput{
 					{
 						IP:     "127.0.0.100",
 						Port:   30201,
@@ -464,13 +464,13 @@ func TestLoadBalancers_UpdateLoadBalancer(t *testing.T) {
 	collection.EXPECT().SetPerPage(100).Return(collection)
 	collection.EXPECT().SetParam("search_pattern", balancerName).Return(collection)
 	collection.EXPECT().SetParam("type", "l4").Return(collection)
-	collection.EXPECT().Collect(ctx).Return([]serverscom.LoadBalancer{balancer}, nil)
+	collection.EXPECT().Collect(ctx).Return([]cli.LoadBalancer{balancer}, nil)
 
 	service.EXPECT().Collection().Return(collection)
 	service.EXPECT().GetL4LoadBalancer(ctx, "a").Return(&l4Balancer, nil)
 	service.EXPECT().UpdateL4LoadBalancer(ctx, "a", input).Return(&l4Balancer, nil)
 
-	client := serverscom.NewClient("some")
+	client := cli.NewClient("some")
 	client.LoadBalancers = service
 
 	srv := v1.Service{}
@@ -500,12 +500,12 @@ func TestLoadBalancers_EnsureLoadBalancerDeleted(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	collection := serverscom_testing.NewMockCollection[serverscom.LoadBalancer](ctrl)
+	collection := serverscom_testing.NewMockCollection[cli.LoadBalancer](ctrl)
 	service := serverscom_testing.NewMockLoadBalancersService(ctrl)
 
 	balancerName := "service-a123"
 
-	balancer := serverscom.LoadBalancer{
+	balancer := cli.LoadBalancer{
 		ID:   "a",
 		Name: balancerName,
 	}
@@ -515,13 +515,13 @@ func TestLoadBalancers_EnsureLoadBalancerDeleted(t *testing.T) {
 	collection.EXPECT().SetPerPage(100).Return(collection)
 	collection.EXPECT().SetParam("search_pattern", balancerName).Return(collection)
 	collection.EXPECT().SetParam("type", "l4").Return(collection)
-	collection.EXPECT().Collect(ctx).Return([]serverscom.LoadBalancer{balancer}, nil)
+	collection.EXPECT().Collect(ctx).Return([]cli.LoadBalancer{balancer}, nil)
 
 	service.EXPECT().Collection().Return(collection)
-	service.EXPECT().GetL4LoadBalancer(ctx, "a").Return(&serverscom.L4LoadBalancer{ID: "a", Name: balancerName, Status: "in_process", ExternalAddresses: []string{"127.0.0.1", "127.0.0.2"}}, nil)
+	service.EXPECT().GetL4LoadBalancer(ctx, "a").Return(&cli.L4LoadBalancer{ID: "a", Name: balancerName, Status: "in_process", ExternalAddresses: []string{"127.0.0.1", "127.0.0.2"}}, nil)
 	service.EXPECT().DeleteL4LoadBalancer(ctx, "a").Return(nil)
 
-	client := serverscom.NewClient("some")
+	client := cli.NewClient("some")
 	client.LoadBalancers = service
 
 	srv := v1.Service{}
@@ -543,7 +543,7 @@ func TestLoadBalancers_EnsureLoadBalancerDeletedWhenBalancerAlreadyDeleted(t *te
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	collection := serverscom_testing.NewMockCollection[serverscom.LoadBalancer](ctrl)
+	collection := serverscom_testing.NewMockCollection[cli.LoadBalancer](ctrl)
 	service := serverscom_testing.NewMockLoadBalancersService(ctrl)
 
 	balancerName := "service-a123"
@@ -553,11 +553,11 @@ func TestLoadBalancers_EnsureLoadBalancerDeletedWhenBalancerAlreadyDeleted(t *te
 	collection.EXPECT().SetPerPage(100).Return(collection)
 	collection.EXPECT().SetParam("search_pattern", balancerName).Return(collection)
 	collection.EXPECT().SetParam("type", "l4").Return(collection)
-	collection.EXPECT().Collect(ctx).Return([]serverscom.LoadBalancer{}, nil)
+	collection.EXPECT().Collect(ctx).Return([]cli.LoadBalancer{}, nil)
 
 	service.EXPECT().Collection().Return(collection)
 
-	client := serverscom.NewClient("some")
+	client := cli.NewClient("some")
 	client.LoadBalancers = service
 
 	srv := v1.Service{}

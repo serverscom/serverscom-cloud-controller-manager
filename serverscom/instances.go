@@ -4,17 +4,17 @@ import (
 	"context"
 	"fmt"
 
-	serverscom "github.com/serverscom/serverscom-go-client/pkg"
+	cli "github.com/serverscom/serverscom-go-client/pkg"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	cloudprovider "k8s.io/cloud-provider"
 )
 
 type instances struct {
-	client *serverscom.Client
+	client *cli.Client
 }
 
-func newInstances(client *serverscom.Client) cloudprovider.Instances {
+func newInstances(client *cli.Client) cloudprovider.Instances {
 	return &instances{client: client}
 }
 
@@ -72,7 +72,7 @@ func (i *instances) NodeAddressesByProviderID(ctx context.Context, providerID st
 			return nil, fmt.Errorf("can't get dedicated server: %s", err.Error())
 		}
 
-		return collectHostAddresses(&serverscom.Host{
+		return collectHostAddresses(&cli.Host{
 			Title:              host.Title,
 			PrivateIPv4Address: host.PrivateIPv4Address,
 			PublicIPv4Address:  host.PublicIPv4Address,
@@ -83,7 +83,7 @@ func (i *instances) NodeAddressesByProviderID(ctx context.Context, providerID st
 			return nil, fmt.Errorf("can't get kubernetes baremetal node %s", err.Error())
 		}
 
-		return collectHostAddresses(&serverscom.Host{
+		return collectHostAddresses(&cli.Host{
 			Title:              host.Title,
 			PrivateIPv4Address: host.PrivateIPv4Address,
 			PublicIPv4Address:  host.PublicIPv4Address,

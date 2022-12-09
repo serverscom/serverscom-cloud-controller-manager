@@ -12,6 +12,8 @@ import (
 	"k8s.io/component-base/cli/flag"
 	"k8s.io/component-base/logs"
 
+	_ "github.com/serverscom/cloud-controller-manager/serverscom"
+
 	"k8s.io/klog/v2"
 )
 
