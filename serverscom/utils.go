@@ -113,11 +113,11 @@ func buildExternalID(instanceType, ID string) string {
 	return fmt.Sprintf("%s/%s", instanceType, ID)
 }
 
-func getLoadBalancerName(srv *v1.Service) string {
+func getLoadBalancerName(srv *v1.Service, clusterName string) string {
 	ret := "a" + string(srv.UID)
 	ret = strings.Replace(ret, "-", "", -1)
 	if len(ret) > 32 {
 		ret = ret[:32]
 	}
-	return fmt.Sprintf("service-%s", ret)
+	return fmt.Sprintf("service-%s-%s", clusterName, ret)
 }

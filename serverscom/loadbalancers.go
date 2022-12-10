@@ -12,6 +12,8 @@ import (
 )
 
 const (
+	loadBalancerActiveStatus = "active"
+
 	loadBalancerNameAnnotation       = "servers.com/load-balancer-name"
 	loadBalancerHostnameAnnotation   = "servers.com/load-balancer-hostname"
 	loadBalancerLocationIdAnnotation = "servers.com/load-balancer-location-id"
@@ -35,7 +37,7 @@ func (l *loadBalancers) GetLoadBalancer(ctx context.Context, clusterName string,
 		return nil, false, err
 	}
 
-	if loadBalancer.Status != "active" {
+	if loadBalancer.Status != loadBalancerActiveStatus {
 		return nil, true, fmt.Errorf("load balancer is not active, current status: %s", loadBalancer.Status)
 	}
 
@@ -45,7 +47,7 @@ func (l *loadBalancers) GetLoadBalancer(ctx context.Context, clusterName string,
 func (l *loadBalancers) GetLoadBalancerName(ctx context.Context, clusterName string, service *v1.Service) string {
 	name, ok := service.Annotations[loadBalancerNameAnnotation]
 	if !ok {
-		return getLoadBalancerName(service)
+		return getLoadBalancerName(service, clusterName)
 	}
 
 	return name
@@ -81,6 +83,9 @@ func (l *loadBalancers) EnsureLoadBalancer(ctx context.Context, clusterName stri
 			return nil, err
 		}
 
+		if loadBalancer.Status != loadBalancerActiveStatus {
+			return nil, fmt.Errorf("load balancer is not active, current status: %s", loadBalancer.Status)
+		}
 	} else {
 		name := l.GetLoadBalancerName(ctx, clusterName, service)
 
@@ -92,6 +97,10 @@ func (l *loadBalancers) EnsureLoadBalancer(ctx context.Context, clusterName stri
 		loadBalancer, err = l.client.LoadBalancers.UpdateL4LoadBalancer(ctx, loadBalancer.ID, input)
 		if err != nil {
 			return nil, err
+		}
+
+		if loadBalancer.Status != loadBalancerActiveStatus {
+			return nil, fmt.Errorf("load balancer is not active, current status: %s", loadBalancer.Status)
 		}
 	}
 
@@ -119,6 +128,10 @@ func (l *loadBalancers) UpdateLoadBalancer(ctx context.Context, clusterName stri
 	_, err = l.client.LoadBalancers.UpdateL4LoadBalancer(ctx, loadBalancer.ID, input)
 	if err != nil {
 		return err
+	}
+
+	if loadBalancer.Status != loadBalancerActiveStatus {
+		return fmt.Errorf("load balancer is not active, current status: %s", loadBalancer.Status)
 	}
 
 	return nil

@@ -20,7 +20,7 @@ func TestLoadBalancers_GetLoadBalancer(t *testing.T) {
 	collection := serverscom_testing.NewMockCollection[cli.LoadBalancer](ctrl)
 	service := serverscom_testing.NewMockLoadBalancersService(ctrl)
 
-	balancerName := "service-a123"
+	balancerName := "service-cluster-a123"
 	locationID := int64(1)
 
 	balancer := cli.LoadBalancer{
@@ -64,7 +64,7 @@ func TestLoadBalancers_GetLoadBalancerNonActive(t *testing.T) {
 	collection := serverscom_testing.NewMockCollection[cli.LoadBalancer](ctrl)
 	service := serverscom_testing.NewMockLoadBalancersService(ctrl)
 
-	balancerName := "service-a123"
+	balancerName := "service-cluster-a123"
 	locationID := int64(1)
 
 	balancer := cli.LoadBalancer{
@@ -106,7 +106,7 @@ func TestLoadBalancers_GetLoadBalancerEmptyList(t *testing.T) {
 	collection := serverscom_testing.NewMockCollection[cli.LoadBalancer](ctrl)
 	service := serverscom_testing.NewMockLoadBalancersService(ctrl)
 
-	balancerName := "service-a123"
+	balancerName := "service-cluster-a123"
 	locationID := int64(1)
 
 	ctx := context.TODO()
@@ -145,7 +145,7 @@ func TestLoadBalancers_GetLoadBalancerName(t *testing.T) {
 	balancerInterface := newLoadBalancers(client, &locationID)
 	name := balancerInterface.GetLoadBalancerName(ctx, "cluster", &srv)
 
-	g.Expect(name).To(Equal("service-a123"))
+	g.Expect(name).To(Equal("service-cluster-a123"))
 }
 
 func TestLoadBalancers_GetLoadBalancerNameWithAnnotation(t *testing.T) {
@@ -175,7 +175,7 @@ func TestLoadBalancers_EnsureLoadBalancer(t *testing.T) {
 	collection := serverscom_testing.NewMockCollection[cli.LoadBalancer](ctrl)
 	service := serverscom_testing.NewMockLoadBalancersService(ctrl)
 
-	balancerName := "service-a123"
+	balancerName := "service-cluster-a123"
 	locationID := int64(1)
 
 	balancer := cli.LoadBalancer{
@@ -286,7 +286,7 @@ func TestLoadBalancers_EnsureLoadBalancerWithCreate(t *testing.T) {
 	collection := serverscom_testing.NewMockCollection[cli.LoadBalancer](ctrl)
 	service := serverscom_testing.NewMockLoadBalancersService(ctrl)
 
-	balancerName := "service-a123"
+	balancerName := "service-cluster-a123"
 	locationID := int64(1)
 
 	l4Balancer := cli.L4LoadBalancer{
@@ -392,7 +392,7 @@ func TestLoadBalancers_UpdateLoadBalancer(t *testing.T) {
 	collection := serverscom_testing.NewMockCollection[cli.LoadBalancer](ctrl)
 	service := serverscom_testing.NewMockLoadBalancersService(ctrl)
 
-	balancerName := "service-a123"
+	balancerName := "service-cluster-a123"
 	locationID := int64(1)
 
 	balancer := cli.LoadBalancer{
@@ -503,7 +503,7 @@ func TestLoadBalancers_EnsureLoadBalancerDeleted(t *testing.T) {
 	collection := serverscom_testing.NewMockCollection[cli.LoadBalancer](ctrl)
 	service := serverscom_testing.NewMockLoadBalancersService(ctrl)
 
-	balancerName := "service-a123"
+	balancerName := "service-cluster-a123"
 
 	balancer := cli.LoadBalancer{
 		ID:   "a",
@@ -546,7 +546,7 @@ func TestLoadBalancers_EnsureLoadBalancerDeletedWhenBalancerAlreadyDeleted(t *te
 	collection := serverscom_testing.NewMockCollection[cli.LoadBalancer](ctrl)
 	service := serverscom_testing.NewMockLoadBalancersService(ctrl)
 
-	balancerName := "service-a123"
+	balancerName := "service-cluster-a123"
 
 	ctx := context.TODO()
 
