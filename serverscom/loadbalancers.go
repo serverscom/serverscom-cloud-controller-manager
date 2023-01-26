@@ -14,9 +14,10 @@ import (
 const (
 	loadBalancerActiveStatus = "active"
 
-	loadBalancerNameAnnotation       = "servers.com/load-balancer-name"
-	loadBalancerHostnameAnnotation   = "servers.com/load-balancer-hostname"
-	loadBalancerLocationIdAnnotation = "servers.com/load-balancer-location-id"
+	loadBalancerNameAnnotation          = "servers.com/load-balancer-name"
+	loadBalancerHostnameAnnotation      = "servers.com/load-balancer-hostname"
+	loadBalancerLocationIdAnnotation    = "servers.com/load-balancer-location-id"
+	loadBalancerProxyProtocolAnnotation = "servers.com/proxy-protocol"
 )
 
 type loadBalancers struct {
@@ -204,6 +205,13 @@ func (l *loadBalancers) buildZones(service *v1.Service, nodes []*v1.Node) ([]cli
 
 		if port.Protocol == "UDP" {
 			vhostZoneInput.UDP = true
+		}
+
+		proxyProtocolEnabled, ok := service.Annotations[loadBalancerProxyProtocolAnnotation]
+		if ok && (proxyProtocolEnabled == "true" || proxyProtocolEnabled == "True") {
+			vhostZoneInput.ProxyProtocolEnabled = true
+		} else {
+			vhostZoneInput.ProxyProtocolEnabled = false
 		}
 
 		upstreamZoneInput := cli.L4UpstreamZoneInput{}
