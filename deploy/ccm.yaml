@@ -59,7 +59,7 @@ spec:
         - key: "node.kubernetes.io/not-ready"
           effect: "NoSchedule"
       containers:
-        - image: serverscom/serverscom-cloud-controller-manager:v1.2.0
+        - image: serverscom/serverscom-cloud-controller-manager:v1.2.1
           name: serverscom-cloud-controller-manager
           command:
             - "/bin/serverscom-cloud-controller-manager"

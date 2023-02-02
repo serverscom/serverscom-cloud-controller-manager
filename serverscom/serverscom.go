@@ -58,7 +58,7 @@ func newCloud(config io.Reader) (cloudprovider.Interface, error) {
 
 	if defaultLocationIDStr != "" {
 		n, err := strconv.ParseInt(defaultLocationIDStr, 10, 64)
-		if err == nil {
+		if err != nil {
 			return nil, fmt.Errorf("invalid %s: %s", defaultLocationIdEnvKey, err.Error())
 		}
 
