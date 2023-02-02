@@ -14,7 +14,7 @@ const (
 	providerName = "serverscom"
 
 	tokenEnvKey             = "SERVERSCOM_TOKEN"
-	baseUrkEnvKey           = "SERVERSCOM_BASE_URL"
+	baseUrlEnvKey           = "SERVERSCOM_BASE_URL"
 	defaultLocationIdEnvKey = "SERVERSCOM_DEFAULT_LOCATION_ID"
 	defaultZoneEnvKey       = "SERVERSCOM_DEFAULT_ZONE"
 
@@ -41,7 +41,7 @@ func newCloud(config io.Reader) (cloudprovider.Interface, error) {
 		return nil, fmt.Errorf("environment variable %q is required", tokenEnvKey)
 	}
 
-	baseUrl := os.Getenv(baseUrkEnvKey)
+	baseUrl := os.Getenv(baseUrlEnvKey)
 
 	var client *cli.Client
 
