@@ -198,7 +198,7 @@ func TestLoadBalancers_EnsureLoadBalancer(t *testing.T) {
 			{
 				ID:                   "k8s-nodes-80-tcp",
 				UDP:                  false,
-				ProxyProtocolEnabled: false,
+				ProxyProtocol:        false,
 				Ports:                []int32{80},
 				Description:          nil,
 				UpstreamID:           "k8s-nodes-80-tcp",
@@ -206,7 +206,7 @@ func TestLoadBalancers_EnsureLoadBalancer(t *testing.T) {
 			{
 				ID:                   "k8s-nodes-11211-udp",
 				UDP:                  true,
-				ProxyProtocolEnabled: false,
+				ProxyProtocol: 	      false,
 				Ports:                []int32{11211},
 				Description:          nil,
 				UpstreamID:           "k8s-nodes-11211-udp",
@@ -305,7 +305,7 @@ func TestLoadBalancers_EnsureLoadBalancerWithCreate(t *testing.T) {
 			{
 				ID:                   "k8s-nodes-80-tcp",
 				UDP:                  false,
-				ProxyProtocolEnabled: false,
+				ProxyProtocol:        false,
 				Ports:                []int32{80},
 				Description:          nil,
 				UpstreamID:           "k8s-nodes-80-tcp",
@@ -313,7 +313,7 @@ func TestLoadBalancers_EnsureLoadBalancerWithCreate(t *testing.T) {
 			{
 				ID:                   "k8s-nodes-11211-udp",
 				UDP:                  true,
-				ProxyProtocolEnabled: false,
+				ProxyProtocol:        false,
 				Ports:                []int32{11211},
 				Description:          nil,
 				UpstreamID:           "k8s-nodes-11211-udp",
@@ -415,7 +415,7 @@ func TestLoadBalancers_UpdateLoadBalancer(t *testing.T) {
 			{
 				ID:                   "k8s-nodes-80-tcp",
 				UDP:                  false,
-				ProxyProtocolEnabled: false,
+				ProxyProtocol:        false,
 				Ports:                []int32{80},
 				Description:          nil,
 				UpstreamID:           "k8s-nodes-80-tcp",
@@ -423,7 +423,7 @@ func TestLoadBalancers_UpdateLoadBalancer(t *testing.T) {
 			{
 				ID:                   "k8s-nodes-11211-udp",
 				UDP:                  true,
-				ProxyProtocolEnabled: false,
+				ProxyProtocol:        false,
 				Ports:                []int32{11211},
 				Description:          nil,
 				UpstreamID:           "k8s-nodes-11211-udp",

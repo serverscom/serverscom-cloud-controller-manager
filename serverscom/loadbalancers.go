@@ -209,9 +209,9 @@ func (l *loadBalancers) buildZones(service *v1.Service, nodes []*v1.Node) ([]cli
 
 		proxyProtocolEnabled, ok := service.Annotations[loadBalancerProxyProtocolAnnotation]
 		if ok && (proxyProtocolEnabled == "true" || proxyProtocolEnabled == "True") {
-			vhostZoneInput.ProxyProtocolEnabled = true
+			vhostZoneInput.ProxyProtocol = true
 		} else {
-			vhostZoneInput.ProxyProtocolEnabled = false
+			vhostZoneInput.ProxyProtocol = false
 		}
 
 		upstreamZoneInput := cli.L4UpstreamZoneInput{}
