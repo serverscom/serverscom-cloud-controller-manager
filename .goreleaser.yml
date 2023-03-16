@@ -19,8 +19,8 @@ dockers:
     goos: linux
     goarch: amd64
     image_templates:
-      - "serverscom/serverscom-cloud-controller-manager:latest"
-      - "serverscom/serverscom-cloud-controller-manager:{{ if not .IsSnapshot }}v{{ end }}{{ .Version }}"
+      - "ghcr.io/serverscom/serverscom-cloud-controller-manager:latest"
+      - "ghcr.io/serverscom/serverscom-cloud-controller-manager:{{ if not .IsSnapshot }}v{{ end }}{{ .Version }}"
     dockerfile: Dockerfile
     use: buildx
     build_flag_templates:
