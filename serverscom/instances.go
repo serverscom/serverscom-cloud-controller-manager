@@ -149,7 +149,7 @@ func (i *instances) InstanceType(ctx context.Context, nodeName types.NodeName) (
 	}
 
 	for _, instance := range cloudInstances {
-		if instance.Name == string(nodeName) {
+		if instance.Name == string(nodeName) || anyMatch(string(nodeName), instance.PrivateIPv4Address, instance.PublicIPv4Address) {
 			return cloudInstanceType, nil
 		}
 	}
@@ -164,7 +164,7 @@ func (i *instances) InstanceType(ctx context.Context, nodeName types.NodeName) (
 	}
 
 	for _, host := range hosts {
-		if host.Title == string(nodeName) {
+		if host.Title == string(nodeName) || anyMatch(string(nodeName), host.PrivateIPv4Address, host.PublicIPv4Address) {
 			switch host.Type {
 			case "dedicated_server":
 				return dedicatedServerType, nil
@@ -176,7 +176,7 @@ func (i *instances) InstanceType(ctx context.Context, nodeName types.NodeName) (
 		}
 	}
 
-	return "", fmt.Errorf("can't find instance by name: %s", string(nodeName))
+	return "", fmt.Errorf("can't find instance type by name: %s", string(nodeName))
 }
 
 func (i *instances) InstanceTypeByProviderID(ctx context.Context, providerID string) (string, error) {
