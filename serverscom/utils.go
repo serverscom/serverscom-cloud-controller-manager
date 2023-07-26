@@ -44,7 +44,7 @@ func parseProviderID(providerID string) (string, string, error) {
 		return "", "", fmt.Errorf("error splitting providerID: %s", providerID)
 	}
 
-	return strings.Replace(matches[1], "_", "-", 0), matches[2], nil
+	return strings.ReplaceAll(matches[1], "_", "-"), matches[2], nil
 }
 
 func collectCloudInstanceAddresses(cloudInstance *cli.CloudComputingInstance) []v1.NodeAddress {
