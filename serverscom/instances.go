@@ -29,7 +29,7 @@ func (i *instances) NodeAddresses(ctx context.Context, nodeName types.NodeName) 
 	}
 
 	for _, instance := range cloudInstances {
-		if instance.Name == string(nodeName) {
+		if instance.Name == string(nodeName) || anyMatch(string(nodeName), instance.PrivateIPv4Address, instance.PublicIPv4Address) {
 			return collectCloudInstanceAddresses(&instance), nil
 		}
 	}
@@ -44,7 +44,7 @@ func (i *instances) NodeAddresses(ctx context.Context, nodeName types.NodeName) 
 	}
 
 	for _, host := range hosts {
-		if host.Title == string(nodeName) {
+		if host.Title == string(nodeName) || anyMatch(string(nodeName), host.PrivateIPv4Address, host.PublicIPv4Address) {
 			return collectHostAddresses(&host), nil
 		}
 	}
