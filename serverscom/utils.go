@@ -120,3 +120,17 @@ func getLoadBalancerName(srv *v1.Service, clusterName string) string {
 	}
 	return fmt.Sprintf("service-%s-%s", clusterName, ret)
 }
+
+func anyMatch(str string, matches ...*string) bool {
+	for _, m := range matches {
+		if m == nil {
+			continue
+		}
+
+		if *m == str {
+			return true
+		}
+	}
+
+	return false
+}

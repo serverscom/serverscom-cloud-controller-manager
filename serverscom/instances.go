@@ -108,7 +108,7 @@ func (i *instances) InstanceID(ctx context.Context, nodeName types.NodeName) (st
 	}
 
 	for _, instance := range cloudInstances {
-		if instance.Name == string(nodeName) {
+		if instance.Name == string(nodeName) || anyMatch(string(nodeName), instance.PrivateIPv4Address, instance.PublicIPv4Address) {
 			return buildExternalID(cloudInstanceType, instance.ID), nil
 		}
 	}
@@ -123,7 +123,7 @@ func (i *instances) InstanceID(ctx context.Context, nodeName types.NodeName) (st
 	}
 
 	for _, host := range hosts {
-		if host.Title == string(nodeName) {
+		if host.Title == string(nodeName) || anyMatch(string(nodeName), host.PrivateIPv4Address, host.PublicIPv4Address) {
 			switch host.Type {
 			case "dedicated_server":
 				return buildExternalID(dedicatedServerType, host.ID), nil
