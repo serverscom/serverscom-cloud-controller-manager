@@ -2,13 +2,12 @@ package serverscom
 
 import (
 	"fmt"
+	"k8s.io/klog/v2"
 	"regexp"
 	"strings"
 
 	cli "github.com/serverscom/serverscom-go-client/pkg"
 	v1 "k8s.io/api/core/v1"
-
-	"k8s.io/klog/v2"
 )
 
 const (
@@ -45,7 +44,7 @@ func parseProviderID(providerID string) (string, string, error) {
 		return "", "", fmt.Errorf("error splitting providerID: %s", providerID)
 	}
 
-	return matches[1], matches[2], nil
+	return strings.Replace(matches[1], "_", "-", 0), matches[2], nil
 }
 
 func collectCloudInstanceAddresses(cloudInstance *cli.CloudComputingInstance) []v1.NodeAddress {
