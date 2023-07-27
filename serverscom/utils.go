@@ -109,7 +109,7 @@ func collectHostAddresses(host *cli.Host) []v1.NodeAddress {
 }
 
 func buildExternalID(instanceType, ID string) string {
-	return fmt.Sprintf("%s/%s", instanceType, ID)
+	return fmt.Sprintf("%s://%s/%s", providerName, instanceType, ID)
 }
 
 func getLoadBalancerName(srv *v1.Service, clusterName string) string {

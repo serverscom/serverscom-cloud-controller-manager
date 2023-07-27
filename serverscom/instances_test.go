@@ -332,7 +332,7 @@ func TestInstances_InstanceIDWithCloudInstance(t *testing.T) {
 	providerID, err := instances.InstanceID(ctx, types.NodeName(nodeName))
 
 	g.Expect(err).To(BeNil())
-	g.Expect(providerID).To(Equal("cloud-instance/a"))
+	g.Expect(providerID).To(Equal("serverscom://cloud-instance/a"))
 }
 
 func TestInstances_InstanceIDWithDedicatedServer(t *testing.T) {
@@ -380,7 +380,7 @@ func TestInstances_InstanceIDWithDedicatedServer(t *testing.T) {
 	providerID, err := instances.InstanceID(ctx, types.NodeName(nodeName))
 
 	g.Expect(err).To(BeNil())
-	g.Expect(providerID).To(Equal("dedicated-server/a"))
+	g.Expect(providerID).To(Equal("serverscom://dedicated-server/a"))
 }
 
 func TestInstances_InstanceIDWithKubernetesBaremetalNode(t *testing.T) {
@@ -428,7 +428,7 @@ func TestInstances_InstanceIDWithKubernetesBaremetalNode(t *testing.T) {
 	providerID, err := instances.InstanceID(ctx, types.NodeName(nodeName))
 
 	g.Expect(err).To(BeNil())
-	g.Expect(providerID).To(Equal("kubernetes-baremetal-node/a"))
+	g.Expect(providerID).To(Equal("serverscom://kubernetes-baremetal-node/a"))
 }
 
 func TestInstances_InstanceTypeWithCloudInstance(t *testing.T) {
