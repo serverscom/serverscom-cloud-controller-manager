@@ -10,21 +10,37 @@ builds:
       - linux
     goarch:
       - amd64
+      - arm64
+      - arm
     binary: serverscom-cloud-controller-manager
     ldflags:
       - "-s -w -X serverscom.providerVersion={{ if not .IsSnapshot }}v{{ end }}{{ .Version }}"
+
 dockers:
-  - ids:
-      - serverscom-cloud-controller-manager
-    goos: linux
-    goarch: amd64
-    image_templates:
-      - "ghcr.io/serverscom/serverscom-cloud-controller-manager:latest"
-      - "ghcr.io/serverscom/serverscom-cloud-controller-manager:{{ if not .IsSnapshot }}v{{ end }}{{ .Version }}"
+  - build_flag_templates: [--platform=linux/amd64]
     dockerfile: Dockerfile
+    goarch: amd64
+    image_templates: ["ghcr.io/serverscom/serverscom-cloud-controller-manager:{{ if not .IsSnapshot }}v{{ end }}{{ .Version }}-amd64"]
     use: buildx
-    build_flag_templates:
-      - "--platform=linux/amd64"
+  - build_flag_templates: [--platform=linux/arm64]
+    dockerfile: Dockerfile
+    goarch: arm64
+    image_templates: ["ghcr.io/serverscom/serverscom-cloud-controller-manager:{{ if not .IsSnapshot }}v{{ end }}{{ .Version }}-arm64v8"]
+    use: buildx
+  - build_flag_templates: [--platform=linux/arm/v6]
+    dockerfile: Dockerfile
+    goarch: arm
+    goarm: 6
+    image_templates: ["ghcr.io/serverscom/serverscom-cloud-controller-manager:{{ if not .IsSnapshot }}v{{ end }}{{ .Version }}-armv6"]
+
+docker_manifests:
+  - name_template: ghcr.io/serverscom/serverscom-cloud-controller-manager:{{ if not .IsSnapshot }}v{{ end }}{{ .Version }}
+    image_templates:
+      - ghcr.io/serverscom/serverscom-cloud-controller-manager:{{ if not .IsSnapshot }}v{{ end }}{{ .Version }}-amd64
+      - ghcr.io/serverscom/serverscom-cloud-controller-manager:{{ if not .IsSnapshot }}v{{ end }}{{ .Version }}-arm64v8
+      - ghcr.io/serverscom/serverscom-cloud-controller-manager:{{ if not .IsSnapshot }}v{{ end }}{{ .Version }}-armv6
+
 release:
   ids: [""]
-  draft: true
+  extra_files:
+    - glob: "./serverscom-cloud-controller-manager-*.tgz"
