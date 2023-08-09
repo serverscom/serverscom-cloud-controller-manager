@@ -42,5 +42,6 @@ docker_manifests:
 
 release:
   ids: [""]
+  draft: true
   extra_files:
     - glob: "./serverscom-cloud-controller-manager-*.tgz"
