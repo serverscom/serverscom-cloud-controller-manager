@@ -36,13 +36,21 @@ jobs:
           args: release --snapshot --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Publish latest snapshot image
+        if: "!startsWith(github.ref, 'refs/tags/')"
+        env:
+          DOCKER_USER: ${{ github.actor }}
+          DOCKER_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+           docker push ghcr.io/serverscom/serverscom-cloud-controller-manager:latest
       - name: Run GoReleaser for tag
         if: "startsWith(github.ref, 'refs/tags/')"
         uses: goreleaser/goreleaser-action@v4
         with:
           version: latest
-          args: release --snapshot --clean
+          args: release --clean
         env:
+          GORELEASER_CURRENT_TAG: ${{ github.ref_name }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Clear
         if: always()
