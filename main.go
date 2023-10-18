@@ -8,6 +8,7 @@ import (
 	cloudprovider "k8s.io/cloud-provider"
 	"k8s.io/cloud-provider/app"
 	"k8s.io/cloud-provider/app/config"
+	"k8s.io/cloud-provider/names"
 	"k8s.io/cloud-provider/options"
 	"k8s.io/component-base/cli/flag"
 	"k8s.io/component-base/logs"
@@ -25,7 +26,14 @@ func main() {
 
 	flagSets := flag.NamedFlagSets{}
 
-	command := app.NewCloudControllerManagerCommand(ccmOptions, cloudInitializer, app.DefaultInitFuncConstructors, flagSets, wait.NeverStop)
+	command := app.NewCloudControllerManagerCommand(
+		ccmOptions,
+		cloudInitializer,
+		app.DefaultInitFuncConstructors,
+		names.CCMControllerAliases(),
+		flagSets,
+		wait.NeverStop,
+	)
 
 	pflag.CommandLine.SetNormalizeFunc(flag.WordSepNormalizeFunc)
 	logs.InitLogs()
