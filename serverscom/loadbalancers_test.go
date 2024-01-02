@@ -9,6 +9,8 @@ import (
 	serverscom_testing "github.com/serverscom/cloud-controller-manager/serverscom/testing"
 	cli "github.com/serverscom/serverscom-go-client/pkg"
 	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes/fake"
 )
 
 func TestLoadBalancers_GetLoadBalancer(t *testing.T) {
@@ -16,6 +18,8 @@ func TestLoadBalancers_GetLoadBalancer(t *testing.T) {
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
+
+	kubeClient := fake.NewSimpleClientset()
 
 	collection := serverscom_testing.NewMockCollection[cli.LoadBalancer](ctrl)
 	service := serverscom_testing.NewMockLoadBalancersService(ctrl)
@@ -42,9 +46,14 @@ func TestLoadBalancers_GetLoadBalancer(t *testing.T) {
 	client.LoadBalancers = service
 
 	srv := v1.Service{}
+	srv.Namespace = "default"
+	srv.Name = "some"
 	srv.UID = "123"
+	srv.Annotations = map[string]string{}
 
-	balancerInterface := newLoadBalancers(client, &locationID)
+	kubeClient.CoreV1().Services(srv.Namespace).Create(ctx, &srv, metav1.CreateOptions{})
+
+	balancerInterface := newLoadBalancers(client, kubeClient, &locationID)
 	status, exists, err := balancerInterface.GetLoadBalancer(ctx, "cluster", &srv)
 
 	g.Expect(err).To(BeNil())
@@ -60,6 +69,8 @@ func TestLoadBalancers_GetLoadBalancerNonActive(t *testing.T) {
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
+
+	kubeClient := fake.NewSimpleClientset()
 
 	collection := serverscom_testing.NewMockCollection[cli.LoadBalancer](ctrl)
 	service := serverscom_testing.NewMockLoadBalancersService(ctrl)
@@ -86,9 +97,14 @@ func TestLoadBalancers_GetLoadBalancerNonActive(t *testing.T) {
 	client.LoadBalancers = service
 
 	srv := v1.Service{}
+	srv.Namespace = "default"
+	srv.Name = "some"
 	srv.UID = "123"
+	srv.Annotations = map[string]string{}
 
-	balancerInterface := newLoadBalancers(client, &locationID)
+	kubeClient.CoreV1().Services(srv.Namespace).Create(ctx, &srv, metav1.CreateOptions{})
+
+	balancerInterface := newLoadBalancers(client, kubeClient, &locationID)
 	status, exists, err := balancerInterface.GetLoadBalancer(ctx, "cluster", &srv)
 
 	g.Expect(err).NotTo(BeNil())
@@ -102,6 +118,8 @@ func TestLoadBalancers_GetLoadBalancerEmptyList(t *testing.T) {
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
+
+	kubeClient := fake.NewSimpleClientset()
 
 	collection := serverscom_testing.NewMockCollection[cli.LoadBalancer](ctrl)
 	service := serverscom_testing.NewMockLoadBalancersService(ctrl)
@@ -122,9 +140,14 @@ func TestLoadBalancers_GetLoadBalancerEmptyList(t *testing.T) {
 	client.LoadBalancers = service
 
 	srv := v1.Service{}
+	srv.Namespace = "default"
+	srv.Name = "some"
 	srv.UID = "123"
+	srv.Annotations = map[string]string{}
 
-	balancerInterface := newLoadBalancers(client, &locationID)
+	kubeClient.CoreV1().Services(srv.Namespace).Create(ctx, &srv, metav1.CreateOptions{})
+
+	balancerInterface := newLoadBalancers(client, kubeClient, &locationID)
 	status, exists, err := balancerInterface.GetLoadBalancer(ctx, "cluster", &srv)
 
 	g.Expect(err).To(BeNil())
@@ -135,14 +158,20 @@ func TestLoadBalancers_GetLoadBalancerEmptyList(t *testing.T) {
 func TestLoadBalancers_GetLoadBalancerName(t *testing.T) {
 	g := NewGomegaWithT(t)
 
+	kubeClient := fake.NewSimpleClientset()
+
 	locationID := int64(1)
 	client := cli.NewClient("some")
 	ctx := context.TODO()
 
 	srv := v1.Service{}
+	srv.Namespace = "default"
+	srv.Name = "some"
 	srv.UID = "123"
 
-	balancerInterface := newLoadBalancers(client, &locationID)
+	kubeClient.CoreV1().Services(srv.Namespace).Create(ctx, &srv, metav1.CreateOptions{})
+
+	balancerInterface := newLoadBalancers(client, kubeClient, &locationID)
 	name := balancerInterface.GetLoadBalancerName(ctx, "cluster", &srv)
 
 	g.Expect(name).To(Equal("service-cluster-a123"))
@@ -151,26 +180,140 @@ func TestLoadBalancers_GetLoadBalancerName(t *testing.T) {
 func TestLoadBalancers_GetLoadBalancerNameWithAnnotation(t *testing.T) {
 	g := NewGomegaWithT(t)
 
+	kubeClient := fake.NewSimpleClientset()
+
 	locationID := int64(1)
 	client := cli.NewClient("some")
 	ctx := context.TODO()
 
 	srv := v1.Service{}
+	srv.Namespace = "default"
+	srv.Name = "some"
 	srv.UID = "123"
 	srv.Annotations = map[string]string{}
 	srv.Annotations[loadBalancerNameAnnotation] = "my-awesome-balancer"
 
-	balancerInterface := newLoadBalancers(client, &locationID)
+	kubeClient.CoreV1().Services(srv.Namespace).Create(ctx, &srv, metav1.CreateOptions{})
+
+	balancerInterface := newLoadBalancers(client, kubeClient, &locationID)
 	name := balancerInterface.GetLoadBalancerName(ctx, "cluster", &srv)
 
 	g.Expect(name).To(Equal("my-awesome-balancer"))
 }
 
-func TestLoadBalancers_EnsureLoadBalancer(t *testing.T) {
+func TestLoadBalancers_EnsureLoadBalancerById(t *testing.T) {
 	g := NewGomegaWithT(t)
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
+
+	kubeClient := fake.NewSimpleClientset()
+
+	service := serverscom_testing.NewMockLoadBalancersService(ctrl)
+
+	balancerName := "service-cluster-a123"
+	locationID := int64(1)
+
+	l4Balancer := cli.L4LoadBalancer{
+		ID:                "a",
+		Name:              balancerName,
+		Status:            "active",
+		ExternalAddresses: []string{"127.0.0.1", "127.0.0.2"},
+	}
+
+	ctx := context.TODO()
+
+	input := cli.L4LoadBalancerUpdateInput{
+		Name: &balancerName,
+		VHostZones: []cli.L4VHostZoneInput{
+			{
+				ID:            "k8s-nodes-80-tcp",
+				UDP:           false,
+				ProxyProtocol: false,
+				Ports:         []int32{80},
+				Description:   nil,
+				UpstreamID:    "k8s-nodes-80-tcp",
+			},
+			{
+				ID:            "k8s-nodes-11211-udp",
+				UDP:           true,
+				ProxyProtocol: false,
+				Ports:         []int32{11211},
+				Description:   nil,
+				UpstreamID:    "k8s-nodes-11211-udp",
+			},
+		},
+		UpstreamZones: []cli.L4UpstreamZoneInput{
+			{
+				ID:         "k8s-nodes-80-tcp",
+				Method:     nil,
+				UDP:        false,
+				HCInterval: nil,
+				HCJitter:   nil,
+				Upstreams: []cli.L4UpstreamInput{
+					{
+						IP:     "127.0.0.100",
+						Port:   30200,
+						Weight: 1,
+					},
+				},
+			},
+			{
+				ID:         "k8s-nodes-11211-udp",
+				Method:     nil,
+				UDP:        false,
+				HCInterval: nil,
+				HCJitter:   nil,
+				Upstreams: []cli.L4UpstreamInput{
+					{
+						IP:     "127.0.0.100",
+						Port:   30201,
+						Weight: 1,
+					},
+				},
+			},
+		},
+	}
+
+	service.EXPECT().GetL4LoadBalancer(ctx, "a").Return(&l4Balancer, nil)
+	service.EXPECT().UpdateL4LoadBalancer(ctx, "a", input).Return(&l4Balancer, nil)
+
+	client := cli.NewClient("some")
+	client.LoadBalancers = service
+
+	srv := v1.Service{}
+	srv.Namespace = "default"
+	srv.Name = "some"
+	srv.UID = "123"
+	srv.Annotations = map[string]string{loadBalancerIdAnnotation: "a"}
+	srv.Spec.Ports = []v1.ServicePort{
+		{Port: 80, Protocol: "TCP", NodePort: 30200},
+		{Port: 11211, Protocol: "UDP", NodePort: 30201},
+	}
+
+	node := v1.Node{}
+	node.Status.Addresses = []v1.NodeAddress{
+		{Address: "node1.example.com", Type: v1.NodeHostName},
+		{Address: "127.0.0.50", Type: v1.NodeExternalIP},
+		{Address: "127.0.0.100", Type: v1.NodeInternalIP},
+	}
+
+	kubeClient.CoreV1().Services(srv.Namespace).Create(ctx, &srv, metav1.CreateOptions{})
+
+	balancerInterface := newLoadBalancers(client, kubeClient, &locationID)
+	status, err := balancerInterface.EnsureLoadBalancer(ctx, "cluster", &srv, []*v1.Node{&node})
+
+	g.Expect(err).To(BeNil())
+	g.Expect(status).NotTo(BeNil())
+}
+
+func TestLoadBalancers_EnsureLoadBalancerByName(t *testing.T) {
+	g := NewGomegaWithT(t)
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	kubeClient := fake.NewSimpleClientset()
 
 	collection := serverscom_testing.NewMockCollection[cli.LoadBalancer](ctrl)
 	service := serverscom_testing.NewMockLoadBalancersService(ctrl)
@@ -196,20 +339,20 @@ func TestLoadBalancers_EnsureLoadBalancer(t *testing.T) {
 		Name: &balancerName,
 		VHostZones: []cli.L4VHostZoneInput{
 			{
-				ID:                   "k8s-nodes-80-tcp",
-				UDP:                  false,
-				ProxyProtocol:        false,
-				Ports:                []int32{80},
-				Description:          nil,
-				UpstreamID:           "k8s-nodes-80-tcp",
+				ID:            "k8s-nodes-80-tcp",
+				UDP:           false,
+				ProxyProtocol: false,
+				Ports:         []int32{80},
+				Description:   nil,
+				UpstreamID:    "k8s-nodes-80-tcp",
 			},
 			{
-				ID:                   "k8s-nodes-11211-udp",
-				UDP:                  true,
-				ProxyProtocol: 	      false,
-				Ports:                []int32{11211},
-				Description:          nil,
-				UpstreamID:           "k8s-nodes-11211-udp",
+				ID:            "k8s-nodes-11211-udp",
+				UDP:           true,
+				ProxyProtocol: false,
+				Ports:         []int32{11211},
+				Description:   nil,
+				UpstreamID:    "k8s-nodes-11211-udp",
 			},
 		},
 		UpstreamZones: []cli.L4UpstreamZoneInput{
@@ -257,7 +400,10 @@ func TestLoadBalancers_EnsureLoadBalancer(t *testing.T) {
 	client.LoadBalancers = service
 
 	srv := v1.Service{}
+	srv.Namespace = "default"
+	srv.Name = "some"
 	srv.UID = "123"
+	srv.Annotations = map[string]string{}
 	srv.Spec.Ports = []v1.ServicePort{
 		{Port: 80, Protocol: "TCP", NodePort: 30200},
 		{Port: 11211, Protocol: "UDP", NodePort: 30201},
@@ -270,11 +416,18 @@ func TestLoadBalancers_EnsureLoadBalancer(t *testing.T) {
 		{Address: "127.0.0.100", Type: v1.NodeInternalIP},
 	}
 
-	balancerInterface := newLoadBalancers(client, &locationID)
+	kubeClient.CoreV1().Services(srv.Namespace).Create(ctx, &srv, metav1.CreateOptions{})
+
+	balancerInterface := newLoadBalancers(client, kubeClient, &locationID)
 	status, err := balancerInterface.EnsureLoadBalancer(ctx, "cluster", &srv, []*v1.Node{&node})
 
 	g.Expect(err).To(BeNil())
 	g.Expect(status).NotTo(BeNil())
+
+	patchedSrv, err := kubeClient.CoreV1().Services(srv.Namespace).Get(ctx, srv.Name, metav1.GetOptions{})
+	g.Expect(err).To(BeNil())
+
+	g.Expect(patchedSrv.Annotations).To(Equal(map[string]string{loadBalancerIdAnnotation: "a"}))
 }
 
 func TestLoadBalancers_EnsureLoadBalancerWithCreate(t *testing.T) {
@@ -282,6 +435,8 @@ func TestLoadBalancers_EnsureLoadBalancerWithCreate(t *testing.T) {
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
+
+	kubeClient := fake.NewSimpleClientset()
 
 	collection := serverscom_testing.NewMockCollection[cli.LoadBalancer](ctrl)
 	service := serverscom_testing.NewMockLoadBalancersService(ctrl)
@@ -303,20 +458,20 @@ func TestLoadBalancers_EnsureLoadBalancerWithCreate(t *testing.T) {
 		LocationID: locationID,
 		VHostZones: []cli.L4VHostZoneInput{
 			{
-				ID:                   "k8s-nodes-80-tcp",
-				UDP:                  false,
-				ProxyProtocol:        false,
-				Ports:                []int32{80},
-				Description:          nil,
-				UpstreamID:           "k8s-nodes-80-tcp",
+				ID:            "k8s-nodes-80-tcp",
+				UDP:           false,
+				ProxyProtocol: false,
+				Ports:         []int32{80},
+				Description:   nil,
+				UpstreamID:    "k8s-nodes-80-tcp",
 			},
 			{
-				ID:                   "k8s-nodes-11211-udp",
-				UDP:                  true,
-				ProxyProtocol:        false,
-				Ports:                []int32{11211},
-				Description:          nil,
-				UpstreamID:           "k8s-nodes-11211-udp",
+				ID:            "k8s-nodes-11211-udp",
+				UDP:           true,
+				ProxyProtocol: false,
+				Ports:         []int32{11211},
+				Description:   nil,
+				UpstreamID:    "k8s-nodes-11211-udp",
 			},
 		},
 		UpstreamZones: []cli.L4UpstreamZoneInput{
@@ -363,11 +518,16 @@ func TestLoadBalancers_EnsureLoadBalancerWithCreate(t *testing.T) {
 	client.LoadBalancers = service
 
 	srv := v1.Service{}
+	srv.Namespace = "default"
+	srv.Name = "some"
 	srv.UID = "123"
+	srv.Annotations = map[string]string{}
 	srv.Spec.Ports = []v1.ServicePort{
 		{Port: 80, Protocol: "TCP", NodePort: 30200},
 		{Port: 11211, Protocol: "UDP", NodePort: 30201},
 	}
+
+	kubeClient.CoreV1().Services(srv.Namespace).Create(ctx, &srv, metav1.CreateOptions{})
 
 	node := v1.Node{}
 	node.Status.Addresses = []v1.NodeAddress{
@@ -376,11 +536,16 @@ func TestLoadBalancers_EnsureLoadBalancerWithCreate(t *testing.T) {
 		{Address: "127.0.0.100", Type: v1.NodeInternalIP},
 	}
 
-	balancerInterface := newLoadBalancers(client, &locationID)
+	balancerInterface := newLoadBalancers(client, kubeClient, &locationID)
 	status, err := balancerInterface.EnsureLoadBalancer(ctx, "cluster", &srv, []*v1.Node{&node})
 
 	g.Expect(err).To(BeNil())
 	g.Expect(status).NotTo(BeNil())
+
+	patchedSrv, err := kubeClient.CoreV1().Services(srv.Namespace).Get(ctx, srv.Name, metav1.GetOptions{})
+	g.Expect(err).To(BeNil())
+
+	g.Expect(patchedSrv.Annotations).To(Equal(map[string]string{loadBalancerIdAnnotation: "a"}))
 }
 
 func TestLoadBalancers_UpdateLoadBalancer(t *testing.T) {
@@ -388,6 +553,8 @@ func TestLoadBalancers_UpdateLoadBalancer(t *testing.T) {
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
+
+	kubeClient := fake.NewSimpleClientset()
 
 	collection := serverscom_testing.NewMockCollection[cli.LoadBalancer](ctrl)
 	service := serverscom_testing.NewMockLoadBalancersService(ctrl)
@@ -413,20 +580,20 @@ func TestLoadBalancers_UpdateLoadBalancer(t *testing.T) {
 		Name: &balancerName,
 		VHostZones: []cli.L4VHostZoneInput{
 			{
-				ID:                   "k8s-nodes-80-tcp",
-				UDP:                  false,
-				ProxyProtocol:        false,
-				Ports:                []int32{80},
-				Description:          nil,
-				UpstreamID:           "k8s-nodes-80-tcp",
+				ID:            "k8s-nodes-80-tcp",
+				UDP:           false,
+				ProxyProtocol: false,
+				Ports:         []int32{80},
+				Description:   nil,
+				UpstreamID:    "k8s-nodes-80-tcp",
 			},
 			{
-				ID:                   "k8s-nodes-11211-udp",
-				UDP:                  true,
-				ProxyProtocol:        false,
-				Ports:                []int32{11211},
-				Description:          nil,
-				UpstreamID:           "k8s-nodes-11211-udp",
+				ID:            "k8s-nodes-11211-udp",
+				UDP:           true,
+				ProxyProtocol: false,
+				Ports:         []int32{11211},
+				Description:   nil,
+				UpstreamID:    "k8s-nodes-11211-udp",
 			},
 		},
 		UpstreamZones: []cli.L4UpstreamZoneInput{
@@ -474,11 +641,16 @@ func TestLoadBalancers_UpdateLoadBalancer(t *testing.T) {
 	client.LoadBalancers = service
 
 	srv := v1.Service{}
+	srv.Namespace = "default"
+	srv.Name = "some"
 	srv.UID = "123"
+	srv.Annotations = map[string]string{}
 	srv.Spec.Ports = []v1.ServicePort{
 		{Port: 80, Protocol: "TCP", NodePort: 30200},
 		{Port: 11211, Protocol: "UDP", NodePort: 30201},
 	}
+
+	kubeClient.CoreV1().Services(srv.Namespace).Create(ctx, &srv, metav1.CreateOptions{})
 
 	node := v1.Node{}
 	node.Status.Addresses = []v1.NodeAddress{
@@ -487,11 +659,16 @@ func TestLoadBalancers_UpdateLoadBalancer(t *testing.T) {
 		{Address: "127.0.0.100", Type: v1.NodeInternalIP},
 	}
 
-	balancerInterface := newLoadBalancers(client, &locationID)
+	balancerInterface := newLoadBalancers(client, kubeClient, &locationID)
 	status, err := balancerInterface.EnsureLoadBalancer(ctx, "cluster", &srv, []*v1.Node{&node})
 
 	g.Expect(err).To(BeNil())
 	g.Expect(status).NotTo(BeNil())
+
+	patchedSrv, err := kubeClient.CoreV1().Services(srv.Namespace).Get(ctx, srv.Name, metav1.GetOptions{})
+	g.Expect(err).To(BeNil())
+
+	g.Expect(patchedSrv.Annotations).To(Equal(map[string]string{loadBalancerIdAnnotation: "a"}))
 }
 
 func TestLoadBalancers_EnsureLoadBalancerDeleted(t *testing.T) {
@@ -499,6 +676,8 @@ func TestLoadBalancers_EnsureLoadBalancerDeleted(t *testing.T) {
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
+
+	kubeClient := fake.NewSimpleClientset()
 
 	collection := serverscom_testing.NewMockCollection[cli.LoadBalancer](ctrl)
 	service := serverscom_testing.NewMockLoadBalancersService(ctrl)
@@ -525,13 +704,18 @@ func TestLoadBalancers_EnsureLoadBalancerDeleted(t *testing.T) {
 	client.LoadBalancers = service
 
 	srv := v1.Service{}
+	srv.Namespace = "default"
+	srv.Name = "some"
 	srv.UID = "123"
+	srv.Annotations = map[string]string{}
 	srv.Spec.Ports = []v1.ServicePort{
 		{Port: 80, Protocol: "TCP", NodePort: 30200},
 		{Port: 11211, Protocol: "UDP", NodePort: 30201},
 	}
 
-	balancerInterface := newLoadBalancers(client, nil)
+	kubeClient.CoreV1().Services(srv.Namespace).Create(ctx, &srv, metav1.CreateOptions{})
+
+	balancerInterface := newLoadBalancers(client, kubeClient, nil)
 	err := balancerInterface.EnsureLoadBalancerDeleted(ctx, "cluster", &srv)
 
 	g.Expect(err).To(BeNil())
@@ -542,6 +726,8 @@ func TestLoadBalancers_EnsureLoadBalancerDeletedWhenBalancerAlreadyDeleted(t *te
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
+
+	kubeClient := fake.NewSimpleClientset()
 
 	collection := serverscom_testing.NewMockCollection[cli.LoadBalancer](ctrl)
 	service := serverscom_testing.NewMockLoadBalancersService(ctrl)
@@ -561,13 +747,18 @@ func TestLoadBalancers_EnsureLoadBalancerDeletedWhenBalancerAlreadyDeleted(t *te
 	client.LoadBalancers = service
 
 	srv := v1.Service{}
+	srv.Namespace = "default"
+	srv.Name = "some"
 	srv.UID = "123"
+	srv.Annotations = map[string]string{}
 	srv.Spec.Ports = []v1.ServicePort{
 		{Port: 80, Protocol: "TCP", NodePort: 30200},
 		{Port: 11211, Protocol: "UDP", NodePort: 30201},
 	}
 
-	balancerInterface := newLoadBalancers(client, nil)
+	kubeClient.CoreV1().Services(srv.Namespace).Create(ctx, &srv, metav1.CreateOptions{})
+
+	balancerInterface := newLoadBalancers(client, kubeClient, nil)
 	err := balancerInterface.EnsureLoadBalancerDeleted(ctx, "cluster", &srv)
 
 	g.Expect(err).To(BeNil())

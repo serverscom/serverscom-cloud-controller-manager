@@ -3,6 +3,7 @@ package serverscom
 import (
 	"fmt"
 	"io"
+	"k8s.io/client-go/kubernetes"
 	"os"
 	"strconv"
 
@@ -28,7 +29,10 @@ func init() {
 }
 
 type cloud struct {
-	client *cli.Client
+	client     *cli.Client
+	kubeClient kubernetes.Interface
+
+	defaultLocationID *int64
 
 	loadBalancers cloudprovider.LoadBalancer
 	instances     cloudprovider.Instances
@@ -53,31 +57,29 @@ func newCloud(config io.Reader) (cloudprovider.Interface, error) {
 
 	client.SetupUserAgent(fmt.Sprintf("serverscom-cloud-controller-manager/%s", controllerVersion))
 
-	defaultLocationIDStr := os.Getenv(defaultLocationIdEnvKey)
-	var defaultLocationID *int64
+	cl := cloud{
+		client:     client,
+	}
 
+	defaultLocationIDStr := os.Getenv(defaultLocationIdEnvKey)
 	if defaultLocationIDStr != "" {
 		n, err := strconv.ParseInt(defaultLocationIDStr, 10, 64)
 		if err != nil {
 			return nil, fmt.Errorf("invalid %s: %s", defaultLocationIdEnvKey, err.Error())
 		}
 
-		defaultLocationID = &n
+		cl.defaultLocationID = &n
 	}
 
-	loadBalancers := newLoadBalancers(client, defaultLocationID)
-	instances := newInstances(client)
-	zones := newZones(client, os.Getenv(defaultZoneEnvKey))
-
-	return &cloud{
-		client:        client,
-		loadBalancers: loadBalancers,
-		instances:     instances,
-		zones:         zones,
-	}, nil
+	return &cl, nil
 }
 
 func (c *cloud) Initialize(clientBuilder cloudprovider.ControllerClientBuilder, stop <-chan struct{}) {
+	clientset := clientBuilder.ClientOrDie("sc-ccm-client")
+
+	c.loadBalancers = newLoadBalancers(c.client, clientset, c.defaultLocationID)
+	c.instances = newInstances(c.client)
+	c.zones = newZones(c.client, os.Getenv(defaultZoneEnvKey))
 }
 
 func (c *cloud) Instances() (cloudprovider.Instances, bool) {

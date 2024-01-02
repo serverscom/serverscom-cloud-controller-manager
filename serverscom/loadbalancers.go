@@ -3,6 +3,8 @@ package serverscom
 import (
 	"context"
 	"fmt"
+	v12 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 	"strconv"
 	"strings"
 
@@ -18,19 +20,22 @@ const (
 	loadBalancerHostnameAnnotation      = "servers.com/load-balancer-hostname"
 	loadBalancerLocationIdAnnotation    = "servers.com/load-balancer-location-id"
 	loadBalancerProxyProtocolAnnotation = "servers.com/proxy-protocol"
+
+	loadBalancerIdAnnotation = "servers.com/load-balancer-id"
 )
 
 type loadBalancers struct {
 	client            *cli.Client
+	kubeClient        kubernetes.Interface
 	defaultLocationID *int64
 }
 
-func newLoadBalancers(client *cli.Client, defaultLocationID *int64) cloudprovider.LoadBalancer {
-	return &loadBalancers{client: client, defaultLocationID: defaultLocationID}
+func newLoadBalancers(client *cli.Client, kubeClient kubernetes.Interface, defaultLocationID *int64) cloudprovider.LoadBalancer {
+	return &loadBalancers{client: client, kubeClient: kubeClient, defaultLocationID: defaultLocationID}
 }
 
 func (l *loadBalancers) GetLoadBalancer(ctx context.Context, clusterName string, service *v1.Service) (*v1.LoadBalancerStatus, bool, error) {
-	loadBalancer, err := l.findLoadBalancerByName(ctx, clusterName, service)
+	loadBalancer, err := l.findLoadBalancer(ctx, clusterName, service)
 
 	if err != nil && isNotFoundError(err) {
 		return nil, false, nil
@@ -55,7 +60,7 @@ func (l *loadBalancers) GetLoadBalancerName(ctx context.Context, clusterName str
 }
 
 func (l *loadBalancers) EnsureLoadBalancer(ctx context.Context, clusterName string, service *v1.Service, nodes []*v1.Node) (*v1.LoadBalancerStatus, error) {
-	loadBalancer, err := l.findLoadBalancerByName(ctx, clusterName, service)
+	loadBalancer, err := l.findLoadBalancer(ctx, clusterName, service)
 	if err != nil {
 		if !isNotFoundError(err) {
 			return nil, err
@@ -84,6 +89,10 @@ func (l *loadBalancers) EnsureLoadBalancer(ctx context.Context, clusterName stri
 			return nil, err
 		}
 
+		if err := l.ensureIdAnnotation(service, loadBalancer.ID); err != nil {
+			return nil, err
+		}
+
 		if loadBalancer.Status != loadBalancerActiveStatus {
 			return nil, fmt.Errorf("load balancer is not active, current status: %s", loadBalancer.Status)
 		}
@@ -100,6 +109,10 @@ func (l *loadBalancers) EnsureLoadBalancer(ctx context.Context, clusterName stri
 			return nil, err
 		}
 
+		if err := l.ensureIdAnnotation(service, loadBalancer.ID); err != nil {
+			return nil, err
+		}
+
 		if loadBalancer.Status != loadBalancerActiveStatus {
 			return nil, fmt.Errorf("load balancer is not active, current status: %s", loadBalancer.Status)
 		}
@@ -109,7 +122,7 @@ func (l *loadBalancers) EnsureLoadBalancer(ctx context.Context, clusterName stri
 }
 
 func (l *loadBalancers) UpdateLoadBalancer(ctx context.Context, clusterName string, service *v1.Service, nodes []*v1.Node) error {
-	loadBalancer, err := l.findLoadBalancerByName(ctx, clusterName, service)
+	loadBalancer, err := l.findLoadBalancer(ctx, clusterName, service)
 	if err != nil {
 		return err
 	}
@@ -131,6 +144,10 @@ func (l *loadBalancers) UpdateLoadBalancer(ctx context.Context, clusterName stri
 		return err
 	}
 
+	if err := l.ensureIdAnnotation(service, loadBalancer.ID); err != nil {
+		return err
+	}
+
 	if loadBalancer.Status != loadBalancerActiveStatus {
 		return fmt.Errorf("load balancer is not active, current status: %s", loadBalancer.Status)
 	}
@@ -139,7 +156,7 @@ func (l *loadBalancers) UpdateLoadBalancer(ctx context.Context, clusterName stri
 }
 
 func (l *loadBalancers) EnsureLoadBalancerDeleted(ctx context.Context, clusterName string, service *v1.Service) error {
-	loadBalancer, err := l.findLoadBalancerByName(ctx, clusterName, service)
+	loadBalancer, err := l.findLoadBalancer(ctx, clusterName, service)
 	if err != nil {
 		if isNotFoundError(err) {
 			return nil
@@ -148,7 +165,20 @@ func (l *loadBalancers) EnsureLoadBalancerDeleted(ctx context.Context, clusterNa
 		return err
 	}
 
+	if err := l.ensureIdAnnotation(service, loadBalancer.ID); err != nil {
+		return err
+	}
+
 	return l.client.LoadBalancers.DeleteL4LoadBalancer(ctx, loadBalancer.ID)
+}
+
+func (l *loadBalancers) findLoadBalancer(ctx context.Context, clusterName string, service *v1.Service) (*cli.L4LoadBalancer, error) {
+	lbId, ok := service.Annotations[loadBalancerIdAnnotation]
+	if !ok {
+		return l.findLoadBalancerByName(ctx, clusterName, service)
+	}
+
+	return l.client.LoadBalancers.GetL4LoadBalancer(ctx, lbId)
 }
 
 func (l *loadBalancers) findLoadBalancerByName(ctx context.Context, clusterName string, service *v1.Service) (*cli.L4LoadBalancer, error) {
@@ -236,6 +266,28 @@ func (l *loadBalancers) buildZones(service *v1.Service, nodes []*v1.Node) ([]cli
 	}
 
 	return vhostZoneInputs, upstreamZoneInputs, nil
+}
+
+func (l *loadBalancers) ensureIdAnnotation(service *v1.Service, id string) error {
+	lbId, ok := service.Annotations[loadBalancerIdAnnotation]
+	if ok && lbId == id {
+		return nil
+	}
+
+	return l.updateServiceAnnotation(service, map[string]string{loadBalancerIdAnnotation: id})
+}
+
+func (l *loadBalancers) updateServiceAnnotation(service *v1.Service, annotations map[string]string) error {
+	if l.kubeClient == nil {
+		return fmt.Errorf("kube client is not configured")
+	}
+
+	for key, val := range annotations {
+		service.Annotations[key] = val
+	}
+
+	_, err := l.kubeClient.CoreV1().Services(service.Namespace).Update(context.TODO(), service, v12.UpdateOptions{})
+	return err
 }
 
 func (l *loadBalancers) extractLocationID(service *v1.Service) (int64, error) {
