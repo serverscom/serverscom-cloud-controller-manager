@@ -184,6 +184,14 @@ func (l *loadBalancers) findLoadBalancerByName(ctx context.Context, clusterName 
 		}
 	}
 
+	if currentLoadBalancer == nil {
+		return nil, &cli.NotFoundError{
+			StatusCode: 404,
+			ErrorCode:  "NOT_FOUND",
+			Message:    fmt.Sprintf("No load balancers were found with name: %s", name),
+		}
+	}
+
 	return l.client.LoadBalancers.GetL4LoadBalancer(ctx, currentLoadBalancer.ID)
 }
 
