@@ -175,12 +175,14 @@ func (l *loadBalancers) findLoadBalancerByName(ctx context.Context, clusterName 
 	var currentLoadBalancer *cli.LoadBalancer
 
 	for _, loadBalancer := range loadBalancers {
-		if loadBalancer.Name == name {
+		balancer := loadBalancer
+
+		if balancer.Name == name {
 			if currentLoadBalancer != nil {
 				return nil, fmt.Errorf("found more than one load balancer with the same name: %s", name)
 			}
 
-			currentLoadBalancer = &loadBalancer
+			currentLoadBalancer = &balancer
 		}
 	}
 
