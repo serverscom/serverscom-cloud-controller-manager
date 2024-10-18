@@ -3,10 +3,10 @@ module github.com/serverscom/cloud-controller-manager
 go 1.21
 
 require (
-	github.com/golang/mock v1.6.0
 	github.com/onsi/gomega v1.27.6
-	github.com/serverscom/serverscom-go-client v1.0.1
+	github.com/serverscom/serverscom-go-client v1.0.6
 	github.com/spf13/pflag v1.0.5
+	go.uber.org/mock v0.4.0
 	k8s.io/api v0.28.12
 	k8s.io/apimachinery v0.28.12
 	k8s.io/cloud-provider v0.28.12

@@ -4,10 +4,10 @@ import (
 	"context"
 	"testing"
 
-	"github.com/golang/mock/gomock"
 	. "github.com/onsi/gomega"
 	serverscom_testing "github.com/serverscom/cloud-controller-manager/serverscom/testing"
 	cli "github.com/serverscom/serverscom-go-client/pkg"
+	gomock "go.uber.org/mock/gomock"
 	v1 "k8s.io/api/core/v1"
 )
 
@@ -196,20 +196,20 @@ func TestLoadBalancers_EnsureLoadBalancer(t *testing.T) {
 		Name: &balancerName,
 		VHostZones: []cli.L4VHostZoneInput{
 			{
-				ID:                   "k8s-nodes-80-tcp",
-				UDP:                  false,
-				ProxyProtocol:        false,
-				Ports:                []int32{80},
-				Description:          nil,
-				UpstreamID:           "k8s-nodes-80-tcp",
+				ID:            "k8s-nodes-80-tcp",
+				UDP:           false,
+				ProxyProtocol: false,
+				Ports:         []int32{80},
+				Description:   nil,
+				UpstreamID:    "k8s-nodes-80-tcp",
 			},
 			{
-				ID:                   "k8s-nodes-11211-udp",
-				UDP:                  true,
-				ProxyProtocol: 	      false,
-				Ports:                []int32{11211},
-				Description:          nil,
-				UpstreamID:           "k8s-nodes-11211-udp",
+				ID:            "k8s-nodes-11211-udp",
+				UDP:           true,
+				ProxyProtocol: false,
+				Ports:         []int32{11211},
+				Description:   nil,
+				UpstreamID:    "k8s-nodes-11211-udp",
 			},
 		},
 		UpstreamZones: []cli.L4UpstreamZoneInput{
@@ -303,20 +303,20 @@ func TestLoadBalancers_EnsureLoadBalancerWithCreate(t *testing.T) {
 		LocationID: locationID,
 		VHostZones: []cli.L4VHostZoneInput{
 			{
-				ID:                   "k8s-nodes-80-tcp",
-				UDP:                  false,
-				ProxyProtocol:        false,
-				Ports:                []int32{80},
-				Description:          nil,
-				UpstreamID:           "k8s-nodes-80-tcp",
+				ID:            "k8s-nodes-80-tcp",
+				UDP:           false,
+				ProxyProtocol: false,
+				Ports:         []int32{80},
+				Description:   nil,
+				UpstreamID:    "k8s-nodes-80-tcp",
 			},
 			{
-				ID:                   "k8s-nodes-11211-udp",
-				UDP:                  true,
-				ProxyProtocol:        false,
-				Ports:                []int32{11211},
-				Description:          nil,
-				UpstreamID:           "k8s-nodes-11211-udp",
+				ID:            "k8s-nodes-11211-udp",
+				UDP:           true,
+				ProxyProtocol: false,
+				Ports:         []int32{11211},
+				Description:   nil,
+				UpstreamID:    "k8s-nodes-11211-udp",
 			},
 		},
 		UpstreamZones: []cli.L4UpstreamZoneInput{
@@ -413,20 +413,20 @@ func TestLoadBalancers_UpdateLoadBalancer(t *testing.T) {
 		Name: &balancerName,
 		VHostZones: []cli.L4VHostZoneInput{
 			{
-				ID:                   "k8s-nodes-80-tcp",
-				UDP:                  false,
-				ProxyProtocol:        false,
-				Ports:                []int32{80},
-				Description:          nil,
-				UpstreamID:           "k8s-nodes-80-tcp",
+				ID:            "k8s-nodes-80-tcp",
+				UDP:           false,
+				ProxyProtocol: false,
+				Ports:         []int32{80},
+				Description:   nil,
+				UpstreamID:    "k8s-nodes-80-tcp",
 			},
 			{
-				ID:                   "k8s-nodes-11211-udp",
-				UDP:                  true,
-				ProxyProtocol:        false,
-				Ports:                []int32{11211},
-				Description:          nil,
-				UpstreamID:           "k8s-nodes-11211-udp",
+				ID:            "k8s-nodes-11211-udp",
+				UDP:           true,
+				ProxyProtocol: false,
+				Ports:         []int32{11211},
+				Description:   nil,
+				UpstreamID:    "k8s-nodes-11211-udp",
 			},
 		},
 		UpstreamZones: []cli.L4UpstreamZoneInput{
