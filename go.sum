@@ -273,8 +273,8 @@ github.com/rogpeppe/go-internal v1.3.0/go.mod h1:M8bDsm7K2OlrFYOpmOWEs/qY81heoFR
 github.com/rogpeppe/go-internal v1.10.0 h1:TMyTOH3F/DB16zRVcYyreMH6GnZZrwQVAoYjRBZyWFQ=
 github.com/rogpeppe/go-internal v1.10.0/go.mod h1:UQnix2H7Ngw/k4C5ijL5+65zddjncjaFoBhdsK/akog=
 github.com/russross/blackfriday/v2 v2.1.0/go.mod h1:+Rmxgy9KzJVeS9/2gXHxylqXiyQDYRxCVz55jmeOWTM=
-github.com/serverscom/serverscom-go-client v1.0.6 h1:3i3l3K+fo6r83e8I8NbzYvBia2AJ1XRVRRmyFafS5bw=
-github.com/serverscom/serverscom-go-client v1.0.6/go.mod h1:X4/JkqDMjEFAqp0hqdRTmcMXc6V2xCitj+kmNyne3/U=
+github.com/serverscom/serverscom-go-client v1.0.7 h1:3+Gld2eueCNtUOaHn9DmQ9ABowUpAkAMbZlKxeMFVOg=
+github.com/serverscom/serverscom-go-client v1.0.7/go.mod h1:X4/JkqDMjEFAqp0hqdRTmcMXc6V2xCitj+kmNyne3/U=
 github.com/sirupsen/logrus v1.9.0 h1:trlNQbNUG3OdDrDil03MCb1H2o9nJ1x4/5LYw7byDE0=
 github.com/sirupsen/logrus v1.9.0/go.mod h1:naHLuLoDiP4jHNo9R0sCBMtWGeIprob74mVsIT4qYEQ=
 github.com/soheilhy/cmux v0.1.5 h1:jjzc5WVemNEDTLwv9tlmemhC73tI08BNOIGwBOo10Js=

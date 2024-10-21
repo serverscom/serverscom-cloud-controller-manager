@@ -68,6 +68,7 @@ func (l *loadBalancers) EnsureLoadBalancer(ctx context.Context, clusterName stri
 		return nil, err
 	}
 
+	// empty value for cluster id still returns nil
 	lbClusterID := l.extractLBClusterID(service)
 
 	if loadBalancer == nil {
@@ -99,6 +100,9 @@ func (l *loadBalancers) EnsureLoadBalancer(ctx context.Context, clusterName stri
 		input.UpstreamZones = upstreamZones
 		input.Name = &name
 		input.ClusterID = lbClusterID
+		if lbClusterID == nil {
+			*input.SharedCluster = true
+		}
 
 		loadBalancer, err = l.client.LoadBalancers.UpdateL4LoadBalancer(ctx, loadBalancer.ID, input)
 		if err != nil {
@@ -291,12 +295,10 @@ func (l *loadBalancers) buildResult(service *v1.Service, loadBalancer *cli.L4Loa
 	return &v1.LoadBalancerStatus{Ingress: ingresses}
 }
 
-func (l *loadBalancers) extractLBClusterID(service *v1.Service) string {
-	var clusterID string
-
-	if id, ok := service.Annotations[loadBalancerClusterAnnotation]; ok {
-		clusterID = id
+func (l *loadBalancers) extractLBClusterID(service *v1.Service) *string {
+	if id, ok := service.Annotations[loadBalancerClusterAnnotation]; ok && id != "" {
+		return &id
 	}
 
-	return clusterID
+	return nil
 }

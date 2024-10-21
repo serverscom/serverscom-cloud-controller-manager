@@ -4,7 +4,7 @@ go 1.21
 
 require (
 	github.com/onsi/gomega v1.27.6
-	github.com/serverscom/serverscom-go-client v1.0.6
+	github.com/serverscom/serverscom-go-client v1.0.7
 	github.com/spf13/pflag v1.0.5
 	go.uber.org/mock v0.4.0
 	k8s.io/api v0.28.12
