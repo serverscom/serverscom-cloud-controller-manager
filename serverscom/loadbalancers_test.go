@@ -177,6 +177,7 @@ func TestLoadBalancers_EnsureLoadBalancer(t *testing.T) {
 
 	balancerName := "service-cluster-a123"
 	locationID := int64(1)
+	sharedCluster := true
 
 	balancer := cli.LoadBalancer{
 		ID:   "a",
@@ -193,7 +194,8 @@ func TestLoadBalancers_EnsureLoadBalancer(t *testing.T) {
 	ctx := context.TODO()
 
 	input := cli.L4LoadBalancerUpdateInput{
-		Name: &balancerName,
+		Name:          &balancerName,
+		SharedCluster: &sharedCluster,
 		VHostZones: []cli.L4VHostZoneInput{
 			{
 				ID:            "k8s-nodes-80-tcp",
@@ -351,12 +353,12 @@ func TestLoadBalancers_EnsureLoadBalancerWithCreate(t *testing.T) {
 		},
 	}
 
-	collection.EXPECT().SetPerPage(100).Return(collection)
-	collection.EXPECT().SetParam("search_pattern", balancerName).Return(collection)
-	collection.EXPECT().SetParam("type", "l4").Return(collection)
-	collection.EXPECT().Collect(ctx).Return([]cli.LoadBalancer{}, nil)
+	collection.EXPECT().SetPerPage(100).Return(collection).Times(2)
+	collection.EXPECT().SetParam("search_pattern", balancerName).Return(collection).Times(2)
+	collection.EXPECT().SetParam("type", "l4").Return(collection).Times(2)
+	collection.EXPECT().Collect(ctx).Return([]cli.LoadBalancer{}, nil).Times(2)
 
-	service.EXPECT().Collection().Return(collection)
+	service.EXPECT().Collection().Return(collection).Times(2)
 	service.EXPECT().CreateL4LoadBalancer(ctx, input).Return(&l4Balancer, nil)
 
 	client := cli.NewClient("some")
@@ -381,6 +383,19 @@ func TestLoadBalancers_EnsureLoadBalancerWithCreate(t *testing.T) {
 
 	g.Expect(err).To(BeNil())
 	g.Expect(status).NotTo(BeNil())
+
+	// with cluster-id annotation
+	clusterID := "some-hash-id"
+	srv.Annotations = map[string]string{
+		"servers.com/cluster-id": clusterID,
+	}
+
+	input.ClusterID = &clusterID
+	service.EXPECT().CreateL4LoadBalancer(ctx, input).Return(&l4Balancer, nil)
+	status, err = balancerInterface.EnsureLoadBalancer(ctx, "cluster", &srv, []*v1.Node{&node})
+
+	g.Expect(err).To(BeNil())
+	g.Expect(status).NotTo(BeNil())
 }
 
 func TestLoadBalancers_UpdateLoadBalancer(t *testing.T) {
@@ -394,6 +409,7 @@ func TestLoadBalancers_UpdateLoadBalancer(t *testing.T) {
 
 	balancerName := "service-cluster-a123"
 	locationID := int64(1)
+	sharedCluster := true
 
 	balancer := cli.LoadBalancer{
 		ID:   "a",
@@ -410,7 +426,8 @@ func TestLoadBalancers_UpdateLoadBalancer(t *testing.T) {
 	ctx := context.TODO()
 
 	input := cli.L4LoadBalancerUpdateInput{
-		Name: &balancerName,
+		Name:          &balancerName,
+		SharedCluster: &sharedCluster,
 		VHostZones: []cli.L4VHostZoneInput{
 			{
 				ID:            "k8s-nodes-80-tcp",
@@ -461,13 +478,13 @@ func TestLoadBalancers_UpdateLoadBalancer(t *testing.T) {
 		},
 	}
 
-	collection.EXPECT().SetPerPage(100).Return(collection)
-	collection.EXPECT().SetParam("search_pattern", balancerName).Return(collection)
-	collection.EXPECT().SetParam("type", "l4").Return(collection)
-	collection.EXPECT().Collect(ctx).Return([]cli.LoadBalancer{balancer}, nil)
+	collection.EXPECT().SetPerPage(100).Return(collection).Times(2)
+	collection.EXPECT().SetParam("search_pattern", balancerName).Return(collection).Times(2)
+	collection.EXPECT().SetParam("type", "l4").Return(collection).Times(2)
+	collection.EXPECT().Collect(ctx).Return([]cli.LoadBalancer{balancer}, nil).Times(2)
 
-	service.EXPECT().Collection().Return(collection)
-	service.EXPECT().GetL4LoadBalancer(ctx, "a").Return(&l4Balancer, nil)
+	service.EXPECT().Collection().Return(collection).Times(2)
+	service.EXPECT().GetL4LoadBalancer(ctx, "a").Return(&l4Balancer, nil).Times(2)
 	service.EXPECT().UpdateL4LoadBalancer(ctx, "a", input).Return(&l4Balancer, nil)
 
 	client := cli.NewClient("some")
@@ -489,6 +506,20 @@ func TestLoadBalancers_UpdateLoadBalancer(t *testing.T) {
 
 	balancerInterface := newLoadBalancers(client, &locationID)
 	status, err := balancerInterface.EnsureLoadBalancer(ctx, "cluster", &srv, []*v1.Node{&node})
+
+	g.Expect(err).To(BeNil())
+	g.Expect(status).NotTo(BeNil())
+
+	// with cluster-id annotation
+	clusterID := "some-hash-id"
+	srv.Annotations = map[string]string{
+		"servers.com/cluster-id": clusterID,
+	}
+
+	input.ClusterID = &clusterID
+	input.SharedCluster = nil
+	service.EXPECT().UpdateL4LoadBalancer(ctx, "a", input).Return(&l4Balancer, nil)
+	status, err = balancerInterface.EnsureLoadBalancer(ctx, "cluster", &srv, []*v1.Node{&node})
 
 	g.Expect(err).To(BeNil())
 	g.Expect(status).NotTo(BeNil())

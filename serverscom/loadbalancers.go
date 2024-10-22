@@ -101,6 +101,7 @@ func (l *loadBalancers) EnsureLoadBalancer(ctx context.Context, clusterName stri
 		input.Name = &name
 		input.ClusterID = lbClusterID
 		if lbClusterID == nil {
+			input.SharedCluster = new(bool)
 			*input.SharedCluster = true
 		}
 
