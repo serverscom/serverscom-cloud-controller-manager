@@ -237,6 +237,10 @@ func (l *loadBalancers) buildZones(service *v1.Service, nodes []*v1.Node) ([]cli
 		upstreamZoneInput := cli.L4UpstreamZoneInput{}
 		upstreamZoneInput.ID = id
 
+		if port.Protocol == "UDP" {
+			upstreamZoneInput.UDP = true
+		}
+
 		for _, node := range nodes {
 			for _, address := range node.Status.Addresses {
 				if address.Type != v1.NodeInternalIP {

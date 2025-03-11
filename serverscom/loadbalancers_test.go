@@ -232,7 +232,7 @@ func TestLoadBalancers_EnsureLoadBalancer(t *testing.T) {
 			{
 				ID:         "k8s-nodes-11211-udp",
 				Method:     nil,
-				UDP:        false,
+				UDP:        true,
 				HCInterval: nil,
 				HCJitter:   nil,
 				Upstreams: []cli.L4UpstreamInput{
@@ -339,7 +339,7 @@ func TestLoadBalancers_EnsureLoadBalancerWithCreate(t *testing.T) {
 			{
 				ID:         "k8s-nodes-11211-udp",
 				Method:     nil,
-				UDP:        false,
+				UDP:        true,
 				HCInterval: nil,
 				HCJitter:   nil,
 				Upstreams: []cli.L4UpstreamInput{
@@ -464,7 +464,7 @@ func TestLoadBalancers_UpdateLoadBalancer(t *testing.T) {
 			{
 				ID:         "k8s-nodes-11211-udp",
 				Method:     nil,
-				UDP:        false,
+				UDP:        true,
 				HCInterval: nil,
 				HCJitter:   nil,
 				Upstreams: []cli.L4UpstreamInput{
