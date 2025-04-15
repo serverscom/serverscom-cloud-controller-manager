@@ -21,6 +21,7 @@ import (
 type MockHostsService struct {
 	ctrl     *gomock.Controller
 	recorder *MockHostsServiceMockRecorder
+	isgomock struct{}
 }
 
 // MockHostsServiceMockRecorder is the mock recorder for MockHostsService.
@@ -259,6 +260,36 @@ func (mr *MockHostsServiceMockRecorder) PowerCycleDedicatedServer(ctx, id any) *
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PowerCycleDedicatedServer", reflect.TypeOf((*MockHostsService)(nil).PowerCycleDedicatedServer), ctx, id)
 }
 
+// PowerCycleKubernetesBaremetalNode mocks base method.
+func (m *MockHostsService) PowerCycleKubernetesBaremetalNode(ctx context.Context, id string) (*serverscom.KubernetesBaremetalNode, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "PowerCycleKubernetesBaremetalNode", ctx, id)
+	ret0, _ := ret[0].(*serverscom.KubernetesBaremetalNode)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// PowerCycleKubernetesBaremetalNode indicates an expected call of PowerCycleKubernetesBaremetalNode.
+func (mr *MockHostsServiceMockRecorder) PowerCycleKubernetesBaremetalNode(ctx, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PowerCycleKubernetesBaremetalNode", reflect.TypeOf((*MockHostsService)(nil).PowerCycleKubernetesBaremetalNode), ctx, id)
+}
+
+// PowerCycleSBMServer mocks base method.
+func (m *MockHostsService) PowerCycleSBMServer(ctx context.Context, id string) (*serverscom.SBMServer, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "PowerCycleSBMServer", ctx, id)
+	ret0, _ := ret[0].(*serverscom.SBMServer)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// PowerCycleSBMServer indicates an expected call of PowerCycleSBMServer.
+func (mr *MockHostsServiceMockRecorder) PowerCycleSBMServer(ctx, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PowerCycleSBMServer", reflect.TypeOf((*MockHostsService)(nil).PowerCycleSBMServer), ctx, id)
+}
+
 // PowerOffDedicatedServer mocks base method.
 func (m *MockHostsService) PowerOffDedicatedServer(ctx context.Context, id string) (*serverscom.DedicatedServer, error) {
 	m.ctrl.T.Helper()
@@ -272,6 +303,36 @@ func (m *MockHostsService) PowerOffDedicatedServer(ctx context.Context, id strin
 func (mr *MockHostsServiceMockRecorder) PowerOffDedicatedServer(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PowerOffDedicatedServer", reflect.TypeOf((*MockHostsService)(nil).PowerOffDedicatedServer), ctx, id)
+}
+
+// PowerOffKubernetesBaremetalNode mocks base method.
+func (m *MockHostsService) PowerOffKubernetesBaremetalNode(ctx context.Context, id string) (*serverscom.KubernetesBaremetalNode, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "PowerOffKubernetesBaremetalNode", ctx, id)
+	ret0, _ := ret[0].(*serverscom.KubernetesBaremetalNode)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// PowerOffKubernetesBaremetalNode indicates an expected call of PowerOffKubernetesBaremetalNode.
+func (mr *MockHostsServiceMockRecorder) PowerOffKubernetesBaremetalNode(ctx, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PowerOffKubernetesBaremetalNode", reflect.TypeOf((*MockHostsService)(nil).PowerOffKubernetesBaremetalNode), ctx, id)
+}
+
+// PowerOffSBMServer mocks base method.
+func (m *MockHostsService) PowerOffSBMServer(ctx context.Context, id string) (*serverscom.SBMServer, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "PowerOffSBMServer", ctx, id)
+	ret0, _ := ret[0].(*serverscom.SBMServer)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// PowerOffSBMServer indicates an expected call of PowerOffSBMServer.
+func (mr *MockHostsServiceMockRecorder) PowerOffSBMServer(ctx, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PowerOffSBMServer", reflect.TypeOf((*MockHostsService)(nil).PowerOffSBMServer), ctx, id)
 }
 
 // PowerOnDedicatedServer mocks base method.
@@ -289,6 +350,36 @@ func (mr *MockHostsServiceMockRecorder) PowerOnDedicatedServer(ctx, id any) *gom
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PowerOnDedicatedServer", reflect.TypeOf((*MockHostsService)(nil).PowerOnDedicatedServer), ctx, id)
 }
 
+// PowerOnKubernetesBaremetalNode mocks base method.
+func (m *MockHostsService) PowerOnKubernetesBaremetalNode(ctx context.Context, id string) (*serverscom.KubernetesBaremetalNode, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "PowerOnKubernetesBaremetalNode", ctx, id)
+	ret0, _ := ret[0].(*serverscom.KubernetesBaremetalNode)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// PowerOnKubernetesBaremetalNode indicates an expected call of PowerOnKubernetesBaremetalNode.
+func (mr *MockHostsServiceMockRecorder) PowerOnKubernetesBaremetalNode(ctx, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PowerOnKubernetesBaremetalNode", reflect.TypeOf((*MockHostsService)(nil).PowerOnKubernetesBaremetalNode), ctx, id)
+}
+
+// PowerOnSBMServer mocks base method.
+func (m *MockHostsService) PowerOnSBMServer(ctx context.Context, id string) (*serverscom.SBMServer, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "PowerOnSBMServer", ctx, id)
+	ret0, _ := ret[0].(*serverscom.SBMServer)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// PowerOnSBMServer indicates an expected call of PowerOnSBMServer.
+func (mr *MockHostsServiceMockRecorder) PowerOnSBMServer(ctx, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PowerOnSBMServer", reflect.TypeOf((*MockHostsService)(nil).PowerOnSBMServer), ctx, id)
+}
+
 // ReinstallOperatingSystemForDedicatedServer mocks base method.
 func (m *MockHostsService) ReinstallOperatingSystemForDedicatedServer(ctx context.Context, id string, input serverscom.OperatingSystemReinstallInput) (*serverscom.DedicatedServer, error) {
 	m.ctrl.T.Helper()
@@ -302,6 +393,21 @@ func (m *MockHostsService) ReinstallOperatingSystemForDedicatedServer(ctx contex
 func (mr *MockHostsServiceMockRecorder) ReinstallOperatingSystemForDedicatedServer(ctx, id, input any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReinstallOperatingSystemForDedicatedServer", reflect.TypeOf((*MockHostsService)(nil).ReinstallOperatingSystemForDedicatedServer), ctx, id, input)
+}
+
+// ReinstallOperatingSystemForSBMServer mocks base method.
+func (m *MockHostsService) ReinstallOperatingSystemForSBMServer(ctx context.Context, id string, input serverscom.SBMOperatingSystemReinstallInput) (*serverscom.SBMServer, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ReinstallOperatingSystemForSBMServer", ctx, id, input)
+	ret0, _ := ret[0].(*serverscom.SBMServer)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ReinstallOperatingSystemForSBMServer indicates an expected call of ReinstallOperatingSystemForSBMServer.
+func (mr *MockHostsServiceMockRecorder) ReinstallOperatingSystemForSBMServer(ctx, id, input any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReinstallOperatingSystemForSBMServer", reflect.TypeOf((*MockHostsService)(nil).ReinstallOperatingSystemForSBMServer), ctx, id, input)
 }
 
 // ReleaseSBMServer mocks base method.
@@ -332,4 +438,49 @@ func (m *MockHostsService) ScheduleReleaseForDedicatedServer(ctx context.Context
 func (mr *MockHostsServiceMockRecorder) ScheduleReleaseForDedicatedServer(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ScheduleReleaseForDedicatedServer", reflect.TypeOf((*MockHostsService)(nil).ScheduleReleaseForDedicatedServer), ctx, id)
+}
+
+// UpdateDedicatedServer mocks base method.
+func (m *MockHostsService) UpdateDedicatedServer(ctx context.Context, id string, input serverscom.DedicatedServerUpdateInput) (*serverscom.DedicatedServer, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateDedicatedServer", ctx, id, input)
+	ret0, _ := ret[0].(*serverscom.DedicatedServer)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateDedicatedServer indicates an expected call of UpdateDedicatedServer.
+func (mr *MockHostsServiceMockRecorder) UpdateDedicatedServer(ctx, id, input any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateDedicatedServer", reflect.TypeOf((*MockHostsService)(nil).UpdateDedicatedServer), ctx, id, input)
+}
+
+// UpdateKubernetesBaremetalNode mocks base method.
+func (m *MockHostsService) UpdateKubernetesBaremetalNode(ctx context.Context, id string, input serverscom.KubernetesBaremetalNodeUpdateInput) (*serverscom.KubernetesBaremetalNode, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateKubernetesBaremetalNode", ctx, id, input)
+	ret0, _ := ret[0].(*serverscom.KubernetesBaremetalNode)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateKubernetesBaremetalNode indicates an expected call of UpdateKubernetesBaremetalNode.
+func (mr *MockHostsServiceMockRecorder) UpdateKubernetesBaremetalNode(ctx, id, input any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateKubernetesBaremetalNode", reflect.TypeOf((*MockHostsService)(nil).UpdateKubernetesBaremetalNode), ctx, id, input)
+}
+
+// UpdateSBMServer mocks base method.
+func (m *MockHostsService) UpdateSBMServer(ctx context.Context, id string, input serverscom.SBMServerUpdateInput) (*serverscom.SBMServer, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateSBMServer", ctx, id, input)
+	ret0, _ := ret[0].(*serverscom.SBMServer)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateSBMServer indicates an expected call of UpdateSBMServer.
+func (mr *MockHostsServiceMockRecorder) UpdateSBMServer(ctx, id, input any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateSBMServer", reflect.TypeOf((*MockHostsService)(nil).UpdateSBMServer), ctx, id, input)
 }

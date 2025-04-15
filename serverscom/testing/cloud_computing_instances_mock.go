@@ -21,6 +21,7 @@ import (
 type MockCloudComputingInstancesService struct {
 	ctrl     *gomock.Controller
 	recorder *MockCloudComputingInstancesServiceMockRecorder
+	isgomock struct{}
 }
 
 // MockCloudComputingInstancesServiceMockRecorder is the mock recorder for MockCloudComputingInstancesService.
