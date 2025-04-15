@@ -11,6 +11,13 @@ import (
 	v1 "k8s.io/api/core/v1"
 )
 
+var (
+	defaultLabels = map[string]string{
+		loadBalancerServiceUUIDLabel: "123",
+		loadBalancerClusterNameLabel: sanitizeLabelValue("!@#cluster^&*"),
+	}
+)
+
 func TestLoadBalancers_GetLoadBalancer(t *testing.T) {
 	g := NewGomegaWithT(t)
 
@@ -244,6 +251,7 @@ func TestLoadBalancers_EnsureLoadBalancer(t *testing.T) {
 				},
 			},
 		},
+		Labels: defaultLabels,
 	}
 
 	collection.EXPECT().SetPerPage(100).Return(collection)
@@ -351,6 +359,7 @@ func TestLoadBalancers_EnsureLoadBalancerWithCreate(t *testing.T) {
 				},
 			},
 		},
+		Labels: defaultLabels,
 	}
 
 	collection.EXPECT().SetPerPage(100).Return(collection).Times(2)
@@ -476,6 +485,7 @@ func TestLoadBalancers_UpdateLoadBalancer(t *testing.T) {
 				},
 			},
 		},
+		Labels: defaultLabels,
 	}
 
 	collection.EXPECT().SetPerPage(100).Return(collection).Times(2)
