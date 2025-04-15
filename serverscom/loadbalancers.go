@@ -19,6 +19,9 @@ const (
 	loadBalancerLocationIdAnnotation    = "servers.com/load-balancer-location-id"
 	loadBalancerProxyProtocolAnnotation = "servers.com/proxy-protocol"
 	loadBalancerClusterAnnotation       = "servers.com/cluster-id"
+
+	loadBalancerServiceUUIDLabel = "k8s.servers.com/service-id"
+	loadBalancerClusterNameLabel = "k8s.servers.com/cluster-name"
 )
 
 type loadBalancers struct {
@@ -71,6 +74,11 @@ func (l *loadBalancers) EnsureLoadBalancer(ctx context.Context, clusterName stri
 	// empty value for cluster id still returns nil
 	lbClusterID := l.extractLBClusterID(service)
 
+	defaultLabels := map[string]string{
+		loadBalancerServiceUUIDLabel: string(service.UID),
+		loadBalancerClusterNameLabel: sanitizeLabelValue(clusterName),
+	}
+
 	if loadBalancer == nil {
 		locationID, err := l.extractLocationID(service)
 		if err != nil {
@@ -83,6 +91,7 @@ func (l *loadBalancers) EnsureLoadBalancer(ctx context.Context, clusterName stri
 		input.LocationID = locationID
 		input.Name = l.GetLoadBalancerName(ctx, clusterName, service)
 		input.ClusterID = lbClusterID
+		input.Labels = defaultLabels
 
 		loadBalancer, err = l.client.LoadBalancers.CreateL4LoadBalancer(ctx, input)
 		if err != nil {
@@ -95,6 +104,7 @@ func (l *loadBalancers) EnsureLoadBalancer(ctx context.Context, clusterName stri
 	} else {
 		name := l.GetLoadBalancerName(ctx, clusterName, service)
 
+		mergedLabels := mergeDefaultLabels(loadBalancer.Labels, defaultLabels)
 		input := cli.L4LoadBalancerUpdateInput{}
 		input.VHostZones = vhostZones
 		input.UpstreamZones = upstreamZones
@@ -104,6 +114,7 @@ func (l *loadBalancers) EnsureLoadBalancer(ctx context.Context, clusterName stri
 			input.SharedCluster = new(bool)
 			*input.SharedCluster = true
 		}
+		input.Labels = mergedLabels
 
 		loadBalancer, err = l.client.LoadBalancers.UpdateL4LoadBalancer(ctx, loadBalancer.ID, input)
 		if err != nil {
@@ -128,6 +139,11 @@ func (l *loadBalancers) UpdateLoadBalancer(ctx context.Context, clusterName stri
 	if err != nil {
 		return err
 	}
+	defaultLabels := map[string]string{
+		loadBalancerServiceUUIDLabel: string(service.UID),
+		loadBalancerClusterNameLabel: sanitizeLabelValue(clusterName),
+	}
+	mergedLabels := mergeDefaultLabels(loadBalancer.Labels, defaultLabels)
 
 	name := l.GetLoadBalancerName(ctx, clusterName, service)
 
@@ -135,6 +151,7 @@ func (l *loadBalancers) UpdateLoadBalancer(ctx context.Context, clusterName stri
 	input.VHostZones = vhostZones
 	input.UpstreamZones = upstreamZones
 	input.Name = &name
+	input.Labels = mergedLabels
 
 	_, err = l.client.LoadBalancers.UpdateL4LoadBalancer(ctx, loadBalancer.ID, input)
 	if err != nil {
