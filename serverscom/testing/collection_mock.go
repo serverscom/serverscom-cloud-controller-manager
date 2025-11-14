@@ -21,6 +21,7 @@ import (
 type MockCollection[K any] struct {
 	ctrl     *gomock.Controller
 	recorder *MockCollectionMockRecorder[K]
+	isgomock struct{}
 }
 
 // MockCollectionMockRecorder is the mock recorder for MockCollection.
