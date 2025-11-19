@@ -14,7 +14,7 @@ import (
 var (
 	defaultLabels = map[string]string{
 		loadBalancerServiceUUIDLabel: "123",
-		loadBalancerClusterNameLabel: sanitizeLabelValue("!@#cluster^&*"),
+		// loadBalancerClusterNameLabel: sanitizeLabelValue("!@#cluster^&*"),
 	}
 )
 

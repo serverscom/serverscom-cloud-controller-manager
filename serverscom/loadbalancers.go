@@ -21,7 +21,7 @@ const (
 	loadBalancerClusterAnnotation       = "servers.com/cluster-id"
 
 	loadBalancerServiceUUIDLabel = "k8s.servers.com/service-id"
-	loadBalancerClusterNameLabel = "k8s.servers.com/cluster-name"
+	// loadBalancerClusterNameLabel = "k8s.servers.com/cluster-name"
 )
 
 type loadBalancers struct {
@@ -76,7 +76,7 @@ func (l *loadBalancers) EnsureLoadBalancer(ctx context.Context, clusterName stri
 
 	defaultLabels := map[string]string{
 		loadBalancerServiceUUIDLabel: string(service.UID),
-		loadBalancerClusterNameLabel: sanitizeLabelValue(clusterName),
+		// loadBalancerClusterNameLabel: sanitizeLabelValue(clusterName),
 	}
 
 	if loadBalancer == nil {
@@ -141,7 +141,7 @@ func (l *loadBalancers) UpdateLoadBalancer(ctx context.Context, clusterName stri
 	}
 	defaultLabels := map[string]string{
 		loadBalancerServiceUUIDLabel: string(service.UID),
-		loadBalancerClusterNameLabel: sanitizeLabelValue(clusterName),
+		// loadBalancerClusterNameLabel: sanitizeLabelValue(clusterName),
 	}
 	mergedLabels := mergeDefaultLabels(loadBalancer.Labels, defaultLabels)
 
