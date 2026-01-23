@@ -37,9 +37,18 @@ func TestLoadBalancers_GetLoadBalancer(t *testing.T) {
 
 	ctx := context.TODO()
 
+	// First search by label_selector (should return empty)
 	collection.EXPECT().SetPerPage(100).Return(collection)
-	collection.EXPECT().SetParam("search_pattern", balancerName).Return(collection)
 	collection.EXPECT().SetParam("type", "l4").Return(collection)
+	collection.EXPECT().SetParam("label_selector", "k8s.servers.com/service-id=123").Return(collection)
+	collection.EXPECT().Collect(ctx).Return([]cli.LoadBalancer{}, nil)
+
+	service.EXPECT().Collection().Return(collection)
+
+	// Second search by name
+	collection.EXPECT().SetPerPage(100).Return(collection)
+	collection.EXPECT().SetParam("type", "l4").Return(collection)
+	collection.EXPECT().SetParam("search_pattern", balancerName).Return(collection)
 	collection.EXPECT().Collect(ctx).Return([]cli.LoadBalancer{balancer}, nil)
 
 	service.EXPECT().Collection().Return(collection)
@@ -81,9 +90,18 @@ func TestLoadBalancers_GetLoadBalancerNonActive(t *testing.T) {
 
 	ctx := context.TODO()
 
+	// First search by label_selector (should return empty)
 	collection.EXPECT().SetPerPage(100).Return(collection)
-	collection.EXPECT().SetParam("search_pattern", balancerName).Return(collection)
 	collection.EXPECT().SetParam("type", "l4").Return(collection)
+	collection.EXPECT().SetParam("label_selector", "k8s.servers.com/service-id=123").Return(collection)
+	collection.EXPECT().Collect(ctx).Return([]cli.LoadBalancer{}, nil)
+
+	service.EXPECT().Collection().Return(collection)
+
+	// Second search by name
+	collection.EXPECT().SetPerPage(100).Return(collection)
+	collection.EXPECT().SetParam("type", "l4").Return(collection)
+	collection.EXPECT().SetParam("search_pattern", balancerName).Return(collection)
 	collection.EXPECT().Collect(ctx).Return([]cli.LoadBalancer{balancer}, nil)
 
 	service.EXPECT().Collection().Return(collection)
@@ -118,9 +136,18 @@ func TestLoadBalancers_GetLoadBalancerEmptyList(t *testing.T) {
 
 	ctx := context.TODO()
 
+	// First search by label_selector (should return empty)
 	collection.EXPECT().SetPerPage(100).Return(collection)
-	collection.EXPECT().SetParam("search_pattern", balancerName).Return(collection)
 	collection.EXPECT().SetParam("type", "l4").Return(collection)
+	collection.EXPECT().SetParam("label_selector", "k8s.servers.com/service-id=123").Return(collection)
+	collection.EXPECT().Collect(ctx).Return([]cli.LoadBalancer{}, nil)
+
+	service.EXPECT().Collection().Return(collection)
+
+	// Second search by name (should return empty)
+	collection.EXPECT().SetPerPage(100).Return(collection)
+	collection.EXPECT().SetParam("type", "l4").Return(collection)
+	collection.EXPECT().SetParam("search_pattern", balancerName).Return(collection)
 	collection.EXPECT().Collect(ctx).Return([]cli.LoadBalancer{}, nil)
 
 	service.EXPECT().Collection().Return(collection)
@@ -254,9 +281,10 @@ func TestLoadBalancers_EnsureLoadBalancer(t *testing.T) {
 		Labels: defaultLabels,
 	}
 
+	// First search by label_selector (should find the balancer)
 	collection.EXPECT().SetPerPage(100).Return(collection)
-	collection.EXPECT().SetParam("search_pattern", balancerName).Return(collection)
 	collection.EXPECT().SetParam("type", "l4").Return(collection)
+	collection.EXPECT().SetParam("label_selector", "k8s.servers.com/service-id=123").Return(collection)
 	collection.EXPECT().Collect(ctx).Return([]cli.LoadBalancer{balancer}, nil)
 
 	service.EXPECT().Collection().Return(collection)
@@ -362,12 +390,21 @@ func TestLoadBalancers_EnsureLoadBalancerWithCreate(t *testing.T) {
 		Labels: defaultLabels,
 	}
 
-	collection.EXPECT().SetPerPage(100).Return(collection).Times(2)
-	collection.EXPECT().SetParam("search_pattern", balancerName).Return(collection).Times(2)
-	collection.EXPECT().SetParam("type", "l4").Return(collection).Times(2)
-	collection.EXPECT().Collect(ctx).Return([]cli.LoadBalancer{}, nil).Times(2)
+	// First search by label_selector (should return empty)
+	collection.EXPECT().SetPerPage(100).Return(collection)
+	collection.EXPECT().SetParam("type", "l4").Return(collection)
+	collection.EXPECT().SetParam("label_selector", "k8s.servers.com/service-id=123").Return(collection)
+	collection.EXPECT().Collect(ctx).Return([]cli.LoadBalancer{}, nil)
 
-	service.EXPECT().Collection().Return(collection).Times(2)
+	service.EXPECT().Collection().Return(collection)
+
+	// Second search by name (should return empty)
+	collection.EXPECT().SetPerPage(100).Return(collection)
+	collection.EXPECT().SetParam("type", "l4").Return(collection)
+	collection.EXPECT().SetParam("search_pattern", balancerName).Return(collection)
+	collection.EXPECT().Collect(ctx).Return([]cli.LoadBalancer{}, nil)
+
+	service.EXPECT().Collection().Return(collection)
 	service.EXPECT().CreateL4LoadBalancer(ctx, input).Return(&l4Balancer, nil)
 
 	client := cli.NewClient("some")
@@ -400,6 +437,22 @@ func TestLoadBalancers_EnsureLoadBalancerWithCreate(t *testing.T) {
 	}
 
 	input.ClusterID = &clusterID
+
+	// First search by label_selector (should return empty)
+	collection.EXPECT().SetPerPage(100).Return(collection)
+	collection.EXPECT().SetParam("type", "l4").Return(collection)
+	collection.EXPECT().SetParam("label_selector", "k8s.servers.com/service-id=123").Return(collection)
+	collection.EXPECT().Collect(ctx).Return([]cli.LoadBalancer{}, nil)
+
+	service.EXPECT().Collection().Return(collection)
+
+	// Second search by name (should return empty)
+	collection.EXPECT().SetPerPage(100).Return(collection)
+	collection.EXPECT().SetParam("type", "l4").Return(collection)
+	collection.EXPECT().SetParam("search_pattern", balancerName).Return(collection)
+	collection.EXPECT().Collect(ctx).Return([]cli.LoadBalancer{}, nil)
+
+	service.EXPECT().Collection().Return(collection)
 	service.EXPECT().CreateL4LoadBalancer(ctx, input).Return(&l4Balancer, nil)
 	status, err = balancerInterface.EnsureLoadBalancer(ctx, "cluster", &srv, []*v1.Node{&node})
 
@@ -488,13 +541,14 @@ func TestLoadBalancers_UpdateLoadBalancer(t *testing.T) {
 		Labels: defaultLabels,
 	}
 
-	collection.EXPECT().SetPerPage(100).Return(collection).Times(2)
-	collection.EXPECT().SetParam("search_pattern", balancerName).Return(collection).Times(2)
-	collection.EXPECT().SetParam("type", "l4").Return(collection).Times(2)
-	collection.EXPECT().Collect(ctx).Return([]cli.LoadBalancer{balancer}, nil).Times(2)
+	// First call: search by label_selector (should find the balancer)
+	collection.EXPECT().SetPerPage(100).Return(collection)
+	collection.EXPECT().SetParam("type", "l4").Return(collection)
+	collection.EXPECT().SetParam("label_selector", "k8s.servers.com/service-id=123").Return(collection)
+	collection.EXPECT().Collect(ctx).Return([]cli.LoadBalancer{balancer}, nil)
 
-	service.EXPECT().Collection().Return(collection).Times(2)
-	service.EXPECT().GetL4LoadBalancer(ctx, "a").Return(&l4Balancer, nil).Times(2)
+	service.EXPECT().Collection().Return(collection)
+	service.EXPECT().GetL4LoadBalancer(ctx, "a").Return(&l4Balancer, nil)
 	service.EXPECT().UpdateL4LoadBalancer(ctx, "a", input).Return(&l4Balancer, nil)
 
 	client := cli.NewClient("some")
@@ -528,6 +582,15 @@ func TestLoadBalancers_UpdateLoadBalancer(t *testing.T) {
 
 	input.ClusterID = &clusterID
 	input.SharedCluster = nil
+
+	// Second call: search by label_selector (should find the balancer)
+	collection.EXPECT().SetPerPage(100).Return(collection)
+	collection.EXPECT().SetParam("type", "l4").Return(collection)
+	collection.EXPECT().SetParam("label_selector", "k8s.servers.com/service-id=123").Return(collection)
+	collection.EXPECT().Collect(ctx).Return([]cli.LoadBalancer{balancer}, nil)
+
+	service.EXPECT().Collection().Return(collection)
+	service.EXPECT().GetL4LoadBalancer(ctx, "a").Return(&l4Balancer, nil)
 	service.EXPECT().UpdateL4LoadBalancer(ctx, "a", input).Return(&l4Balancer, nil)
 	status, err = balancerInterface.EnsureLoadBalancer(ctx, "cluster", &srv, []*v1.Node{&node})
 
@@ -553,9 +616,10 @@ func TestLoadBalancers_EnsureLoadBalancerDeleted(t *testing.T) {
 
 	ctx := context.TODO()
 
+	// First search by label_selector (should find the balancer)
 	collection.EXPECT().SetPerPage(100).Return(collection)
-	collection.EXPECT().SetParam("search_pattern", balancerName).Return(collection)
 	collection.EXPECT().SetParam("type", "l4").Return(collection)
+	collection.EXPECT().SetParam("label_selector", "k8s.servers.com/service-id=123").Return(collection)
 	collection.EXPECT().Collect(ctx).Return([]cli.LoadBalancer{balancer}, nil)
 
 	service.EXPECT().Collection().Return(collection)
@@ -591,9 +655,18 @@ func TestLoadBalancers_EnsureLoadBalancerDeletedWhenBalancerAlreadyDeleted(t *te
 
 	ctx := context.TODO()
 
+	// First search by label_selector (should return empty)
 	collection.EXPECT().SetPerPage(100).Return(collection)
-	collection.EXPECT().SetParam("search_pattern", balancerName).Return(collection)
 	collection.EXPECT().SetParam("type", "l4").Return(collection)
+	collection.EXPECT().SetParam("label_selector", "k8s.servers.com/service-id=123").Return(collection)
+	collection.EXPECT().Collect(ctx).Return([]cli.LoadBalancer{}, nil)
+
+	service.EXPECT().Collection().Return(collection)
+
+	// Second search by name (should return empty)
+	collection.EXPECT().SetPerPage(100).Return(collection)
+	collection.EXPECT().SetParam("type", "l4").Return(collection)
+	collection.EXPECT().SetParam("search_pattern", balancerName).Return(collection)
 	collection.EXPECT().Collect(ctx).Return([]cli.LoadBalancer{}, nil)
 
 	service.EXPECT().Collection().Return(collection)

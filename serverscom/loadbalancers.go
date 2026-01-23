@@ -34,7 +34,7 @@ func newLoadBalancers(client *cli.Client, defaultLocationID *int64) cloudprovide
 }
 
 func (l *loadBalancers) GetLoadBalancer(ctx context.Context, clusterName string, service *v1.Service) (*v1.LoadBalancerStatus, bool, error) {
-	loadBalancer, err := l.findLoadBalancerByName(ctx, clusterName, service)
+	loadBalancer, err := l.findLoadBalancer(ctx, clusterName, service)
 
 	if err != nil && isNotFoundError(err) {
 		return nil, false, nil
@@ -59,7 +59,7 @@ func (l *loadBalancers) GetLoadBalancerName(ctx context.Context, clusterName str
 }
 
 func (l *loadBalancers) EnsureLoadBalancer(ctx context.Context, clusterName string, service *v1.Service, nodes []*v1.Node) (*v1.LoadBalancerStatus, error) {
-	loadBalancer, err := l.findLoadBalancerByName(ctx, clusterName, service)
+	loadBalancer, err := l.findLoadBalancer(ctx, clusterName, service)
 	if err != nil {
 		if !isNotFoundError(err) {
 			return nil, err
@@ -130,7 +130,7 @@ func (l *loadBalancers) EnsureLoadBalancer(ctx context.Context, clusterName stri
 }
 
 func (l *loadBalancers) UpdateLoadBalancer(ctx context.Context, clusterName string, service *v1.Service, nodes []*v1.Node) error {
-	loadBalancer, err := l.findLoadBalancerByName(ctx, clusterName, service)
+	loadBalancer, err := l.findLoadBalancer(ctx, clusterName, service)
 	if err != nil {
 		return err
 	}
@@ -166,7 +166,7 @@ func (l *loadBalancers) UpdateLoadBalancer(ctx context.Context, clusterName stri
 }
 
 func (l *loadBalancers) EnsureLoadBalancerDeleted(ctx context.Context, clusterName string, service *v1.Service) error {
-	loadBalancer, err := l.findLoadBalancerByName(ctx, clusterName, service)
+	loadBalancer, err := l.findLoadBalancer(ctx, clusterName, service)
 	if err != nil {
 		if isNotFoundError(err) {
 			return nil
@@ -178,10 +178,29 @@ func (l *loadBalancers) EnsureLoadBalancerDeleted(ctx context.Context, clusterNa
 	return l.client.LoadBalancers.DeleteL4LoadBalancer(ctx, loadBalancer.ID)
 }
 
-func (l *loadBalancers) findLoadBalancerByName(ctx context.Context, clusterName string, service *v1.Service) (*cli.L4LoadBalancer, error) {
-	name := l.GetLoadBalancerName(ctx, clusterName, service)
-
+// findLoadBalancer tries to find load balancer by label selector first, then by name
+func (l *loadBalancers) findLoadBalancer(ctx context.Context, clusterName string, service *v1.Service) (*cli.L4LoadBalancer, error) {
+	// first try to find by label selector
+	labelSelector := loadBalancerServiceUUIDLabel + "=" + string(service.UID)
 	loadBalancers, err := l.client.LoadBalancers.Collection().
+		SetPerPage(100).
+		SetParam(typeParamKey, "l4").
+		SetParam("label_selector", labelSelector).
+		Collect(ctx)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if len(loadBalancers) == 1 {
+		return l.client.LoadBalancers.GetL4LoadBalancer(ctx, loadBalancers[0].ID)
+	} else if len(loadBalancers) > 1 {
+		return nil, fmt.Errorf("found more than one load balancer with the same label selector: %s", labelSelector)
+	}
+
+	// fallback to name-based search
+	name := l.GetLoadBalancerName(ctx, clusterName, service)
+	loadBalancers, err = l.client.LoadBalancers.Collection().
 		SetPerPage(100).
 		SetParam(typeParamKey, "l4").
 		SetParam(searchPatternParamKey, name).
