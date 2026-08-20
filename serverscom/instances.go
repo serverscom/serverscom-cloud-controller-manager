@@ -53,7 +53,8 @@ func (i *instances) NodeAddresses(ctx context.Context, nodeName types.NodeName) 
 }
 
 func (i *instances) NodeAddressesByProviderID(ctx context.Context, providerID string) ([]v1.NodeAddress, error) {
-	instanceType, instanceID, err := parseProviderID(providerID)
+	info, err := parseProviderID(providerID)
+	instanceType, instanceID := info.nodeType, info.instanceID
 	if err != nil {
 		return nil, err
 	}
@@ -88,6 +89,13 @@ func (i *instances) NodeAddressesByProviderID(ctx context.Context, providerID st
 			PrivateIPv4Address: host.PrivateIPv4Address,
 			PublicIPv4Address:  host.PublicIPv4Address,
 		}), nil
+	case kubernetesAutoscaleNodeType:
+		node, err := i.client.KubernetesClusters.GetNode(ctx, info.clusterID, instanceID)
+		if err != nil {
+			return nil, fmt.Errorf("can't get kubernetes autoscale node: %s", err.Error())
+		}
+
+		return collectKubernetesClusterNodeAddresses(node), nil
 	default:
 		return nil, fmt.Errorf("invalid instance type: %s", instanceType)
 	}
@@ -180,12 +188,12 @@ func (i *instances) InstanceType(ctx context.Context, nodeName types.NodeName) (
 }
 
 func (i *instances) InstanceTypeByProviderID(ctx context.Context, providerID string) (string, error) {
-	instanceType, _, err := parseProviderID(providerID)
+	info, err := parseProviderID(providerID)
 	if err != nil {
 		return "", err
 	}
 
-	return instanceType, nil
+	return info.nodeType, nil
 }
 
 func (i *instances) AddSSHKeyToAllInstances(_ context.Context, _ string, _ []byte) error {
@@ -197,7 +205,8 @@ func (i *instances) CurrentNodeName(_ context.Context, hostname string) (types.N
 }
 
 func (i *instances) InstanceExistsByProviderID(ctx context.Context, providerID string) (bool, error) {
-	instanceType, instanceID, err := parseProviderID(providerID)
+	info, err := parseProviderID(providerID)
+	instanceType, instanceID := info.nodeType, info.instanceID
 	if err != nil {
 		return false, err
 	}
@@ -236,13 +245,26 @@ func (i *instances) InstanceExistsByProviderID(ctx context.Context, providerID s
 		}
 
 		return host != nil, nil
+	case kubernetesAutoscaleNodeType:
+		node, err := i.client.KubernetesClusters.GetNode(ctx, info.clusterID, instanceID)
+		if err != nil {
+			// a missing autoscale node is the normal outcome of a scale-down
+			if isNotFoundError(err) {
+				return false, nil
+			}
+
+			return false, fmt.Errorf("can't get kubernetes autoscale node: %s", err.Error())
+		}
+
+		return node != nil, nil
 	default:
 		return false, fmt.Errorf("invalid instance type: %s", instanceType)
 	}
 }
 
 func (i *instances) InstanceShutdownByProviderID(ctx context.Context, providerID string) (bool, error) {
-	instanceType, instanceID, err := parseProviderID(providerID)
+	info, err := parseProviderID(providerID)
+	instanceType, instanceID := info.nodeType, info.instanceID
 	if err != nil {
 		return true, err
 	}
@@ -269,6 +291,13 @@ func (i *instances) InstanceShutdownByProviderID(ctx context.Context, providerID
 		}
 
 		return host.PowerStatus == "powered_off", nil
+	case kubernetesAutoscaleNodeType:
+		// autoscale nodes have no power state, so an existing one is never shut down
+		if _, err := i.client.KubernetesClusters.GetNode(ctx, info.clusterID, instanceID); err != nil {
+			return false, fmt.Errorf("can't get kubernetes autoscale node: %s", err.Error())
+		}
+
+		return false, nil
 	default:
 		return true, fmt.Errorf("invalid instance type: %s", instanceType)
 	}

@@ -2,7 +2,7 @@ package serverscom
 
 import (
 	"fmt"
-	"regexp"
+	"slices"
 	"sort"
 	"strings"
 
@@ -18,12 +18,26 @@ const (
 	cloudInstanceType           = "cloud-instance"
 	dedicatedServerType         = "dedicated-server"
 	kubernetesBaremetalNodeType = "kubernetes-baremetal-node"
+	kubernetesAutoscaleNodeType = "kubernetes-autoscale-node"
 
 	searchPatternParamKey = "search_pattern"
 	typeParamKey          = "type"
 )
 
-var providerIDRE = regexp.MustCompile(`^` + providerName + `://([^/]+)/([^/]+)$`)
+// providerIDInfo holds the parsed parts of a providerID.
+//
+// Two forms are supported:
+//
+//	serverscom://<node_type>/<instance_id>              — all node types except autoscale
+//	serverscom://kubernetes-autoscale-node/<cluster_id>/<node_id>
+//
+// clusterID is set only for autoscale nodes: such a node is not a standalone
+// resource and can only be addressed by the cluster ID + node ID pair.
+type providerIDInfo struct {
+	nodeType   string
+	clusterID  string
+	instanceID string
+}
 
 func isNotFoundError(err error) bool {
 	switch err.(type) {
@@ -34,21 +48,43 @@ func isNotFoundError(err error) bool {
 	}
 }
 
-func parseProviderID(providerID string) (string, string, error) {
+func parseProviderID(providerID string) (providerIDInfo, error) {
 	providerPrefix := providerName + "://"
 
 	if !strings.HasPrefix(providerID, providerPrefix) {
 		klog.Infof(" make sure your cluster configured for an external cloud provider")
-		return "", "", fmt.Errorf("missing prefix %s: %s", providerPrefix, providerID)
+		return providerIDInfo{}, fmt.Errorf("missing prefix %s: %s", providerPrefix, providerID)
 	}
 
-	matches := providerIDRE.FindStringSubmatch(providerID)
+	parts := strings.Split(strings.TrimPrefix(providerID, providerPrefix), "/")
 
-	if len(matches) != 3 {
-		return "", "", fmt.Errorf("error splitting providerID: %s", providerID)
+	if slices.Contains(parts, "") {
+		return providerIDInfo{}, fmt.Errorf("error splitting providerID: %s", providerID)
 	}
 
-	return strings.ReplaceAll(matches[1], "_", "-"), matches[2], nil
+	// the node type segment is normalized to dashes: API type strings are snake_case
+	// (e.g. "dedicated_server"), while the providerID node types are dashed
+	nodeType := strings.ReplaceAll(parts[0], "_", "-")
+
+	switch len(parts) {
+	case 2:
+		if nodeType == kubernetesAutoscaleNodeType {
+			return providerIDInfo{}, fmt.Errorf(
+				"providerID %q for node type %s is missing the cluster ID, expected %s%s/<cluster_id>/<node_id>",
+				providerID, kubernetesAutoscaleNodeType, providerPrefix, kubernetesAutoscaleNodeType)
+		}
+
+		return providerIDInfo{nodeType: nodeType, instanceID: parts[1]}, nil
+	case 3:
+		// a cluster ID segment is only valid for autoscale nodes
+		if nodeType != kubernetesAutoscaleNodeType {
+			return providerIDInfo{}, fmt.Errorf("error splitting providerID: %s", providerID)
+		}
+
+		return providerIDInfo{nodeType: nodeType, clusterID: parts[1], instanceID: parts[2]}, nil
+	default:
+		return providerIDInfo{}, fmt.Errorf("error splitting providerID: %s", providerID)
+	}
 }
 
 func collectCloudInstanceAddresses(cloudInstance *cli.CloudComputingInstance) []v1.NodeAddress {
@@ -112,13 +148,41 @@ func collectHostAddresses(host *cli.Host) []v1.NodeAddress {
 	return addresses
 }
 
+// collectKubernetesClusterNodeAddresses collects addresses of a kubernetes cluster node.
+// Unlike hosts, its IP fields are plain strings, so an absent address is an empty one.
+func collectKubernetesClusterNodeAddresses(node *cli.KubernetesClusterNode) []v1.NodeAddress {
+	var addresses []v1.NodeAddress
+
+	addresses = append(addresses, v1.NodeAddress{Address: node.Hostname, Type: v1.NodeHostName})
+
+	if node.PrivateIPv4Address != "" {
+		addresses = append(
+			addresses,
+			v1.NodeAddress{
+				Address: node.PrivateIPv4Address,
+				Type:    v1.NodeInternalIP,
+			})
+	}
+
+	if node.PublicIPv4Address != "" {
+		addresses = append(
+			addresses,
+			v1.NodeAddress{
+				Address: node.PublicIPv4Address,
+				Type:    v1.NodeExternalIP,
+			})
+	}
+
+	return addresses
+}
+
 func buildExternalID(instanceType, ID string) string {
 	return fmt.Sprintf("%s/%s", instanceType, ID)
 }
 
 func getLoadBalancerName(srv *v1.Service, clusterName string) string {
 	ret := "a" + string(srv.UID)
-	ret = strings.Replace(ret, "-", "", -1)
+	ret = strings.ReplaceAll(ret, "-", "")
 	if len(ret) > 32 {
 		ret = ret[:32]
 	}

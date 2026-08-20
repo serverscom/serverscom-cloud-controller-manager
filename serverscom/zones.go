@@ -23,7 +23,8 @@ func (z zones) GetZone(_ context.Context) (cloudprovider.Zone, error) {
 }
 
 func (z zones) GetZoneByProviderID(ctx context.Context, providerID string) (cloudprovider.Zone, error) {
-	instanceType, instanceID, err := parseProviderID(providerID)
+	info, err := parseProviderID(providerID)
+	instanceType, instanceID := info.nodeType, info.instanceID
 	if err != nil {
 		return cloudprovider.Zone{}, err
 	}
@@ -50,6 +51,13 @@ func (z zones) GetZoneByProviderID(ctx context.Context, providerID string) (clou
 		}
 
 		return cloudprovider.Zone{Region: host.LocationCode}, nil
+	case kubernetesAutoscaleNodeType:
+		node, err := z.client.KubernetesClusters.GetNode(ctx, info.clusterID, instanceID)
+		if err != nil {
+			return cloudprovider.Zone{}, fmt.Errorf("can't get kubernetes autoscale node: %s", err.Error())
+		}
+
+		return cloudprovider.Zone{Region: node.LocationCode}, nil
 	default:
 		return cloudprovider.Zone{}, fmt.Errorf("invalid instance type: %s", instanceType)
 	}
