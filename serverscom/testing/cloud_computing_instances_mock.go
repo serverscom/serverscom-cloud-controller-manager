@@ -86,7 +86,7 @@ func (mr *MockCloudComputingInstancesServiceMockRecorder) Create(ctx, input any)
 }
 
 // CreatePTRRecord mocks base method.
-func (m *MockCloudComputingInstancesService) CreatePTRRecord(ctx context.Context, cloudInstanceID string, input serverscom.PTRRecordCreateInput) (*serverscom.PTRRecord, error) {
+func (m *MockCloudComputingInstancesService) CreatePTRRecord(ctx context.Context, cloudInstanceID string, input serverscom.CloudComputingInstancePTRRecordCreateInput) (*serverscom.PTRRecord, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreatePTRRecord", ctx, cloudInstanceID, input)
 	ret0, _ := ret[0].(*serverscom.PTRRecord)
@@ -185,6 +185,21 @@ func (m *MockCloudComputingInstancesService) PowerOn(ctx context.Context, id str
 func (mr *MockCloudComputingInstancesServiceMockRecorder) PowerOn(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PowerOn", reflect.TypeOf((*MockCloudComputingInstancesService)(nil).PowerOn), ctx, id)
+}
+
+// Reboot mocks base method.
+func (m *MockCloudComputingInstancesService) Reboot(ctx context.Context, id string) (*serverscom.CloudComputingInstance, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Reboot", ctx, id)
+	ret0, _ := ret[0].(*serverscom.CloudComputingInstance)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Reboot indicates an expected call of Reboot.
+func (mr *MockCloudComputingInstancesServiceMockRecorder) Reboot(ctx, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Reboot", reflect.TypeOf((*MockCloudComputingInstancesService)(nil).Reboot), ctx, id)
 }
 
 // Reinstall mocks base method.
