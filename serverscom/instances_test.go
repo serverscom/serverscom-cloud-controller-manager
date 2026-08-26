@@ -2,6 +2,7 @@ package serverscom
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -802,4 +803,292 @@ func TestInstances_InstanceShutdownByProviderIDWithKubernetesBaremetalNode(t *te
 
 	g.Expect(err).To(BeNil())
 	g.Expect(isShutdown).To(Equal(false))
+}
+
+func TestInstances_NodeAddressesByProviderIDWithAutoscaleNode(t *testing.T) {
+	g := NewGomegaWithT(t)
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	nodeName := "my-super-node1"
+	ctx := context.TODO()
+
+	node := cli.KubernetesClusterNode{
+		ID:                 "9V8Mjm2p",
+		ClusterID:          "X4bR2mQ9",
+		Hostname:           nodeName,
+		PrivateIPv4Address: "127.0.0.1",
+		PublicIPv4Address:  "127.0.0.2",
+	}
+
+	clustersService := serverscom_testing.NewMockKubernetesClustersService(ctrl)
+	clustersService.EXPECT().GetNode(ctx, "X4bR2mQ9", "9V8Mjm2p").Return(&node, nil)
+
+	client := cli.NewClient("some")
+	client.KubernetesClusters = clustersService
+
+	instances := newInstances(client)
+	addresses, err := instances.NodeAddressesByProviderID(ctx, "serverscom://kubernetes-autoscale-node/X4bR2mQ9/9V8Mjm2p")
+
+	g.Expect(err).To(BeNil())
+	g.Expect(addresses).NotTo(BeNil())
+	g.Expect(len(addresses)).To(Equal(3))
+
+	g.Expect(addresses[0].Address).To(Equal(nodeName))
+	g.Expect(addresses[0].Type).To(Equal(v1.NodeHostName))
+
+	g.Expect(addresses[1].Address).To(Equal("127.0.0.1"))
+	g.Expect(addresses[1].Type).To(Equal(v1.NodeInternalIP))
+
+	g.Expect(addresses[2].Address).To(Equal("127.0.0.2"))
+	g.Expect(addresses[2].Type).To(Equal(v1.NodeExternalIP))
+}
+
+func TestInstances_NodeAddressesByProviderIDWithAutoscaleNodeWithoutIPs(t *testing.T) {
+	g := NewGomegaWithT(t)
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	nodeName := "my-super-node1"
+	ctx := context.TODO()
+
+	node := cli.KubernetesClusterNode{
+		ID:        "9V8Mjm2p",
+		ClusterID: "X4bR2mQ9",
+		Hostname:  nodeName,
+	}
+
+	clustersService := serverscom_testing.NewMockKubernetesClustersService(ctrl)
+	clustersService.EXPECT().GetNode(ctx, "X4bR2mQ9", "9V8Mjm2p").Return(&node, nil)
+
+	client := cli.NewClient("some")
+	client.KubernetesClusters = clustersService
+
+	instances := newInstances(client)
+	addresses, err := instances.NodeAddressesByProviderID(ctx, "serverscom://kubernetes-autoscale-node/X4bR2mQ9/9V8Mjm2p")
+
+	g.Expect(err).To(BeNil())
+	g.Expect(len(addresses)).To(Equal(1))
+
+	g.Expect(addresses[0].Address).To(Equal(nodeName))
+	g.Expect(addresses[0].Type).To(Equal(v1.NodeHostName))
+}
+
+func TestInstances_NodeAddressesByProviderIDWithAutoscaleNodeMissingClusterID(t *testing.T) {
+	g := NewGomegaWithT(t)
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	ctx := context.TODO()
+
+	// no API call is expected: an autoscale node can't be addressed without a cluster ID
+	clustersService := serverscom_testing.NewMockKubernetesClustersService(ctrl)
+
+	client := cli.NewClient("some")
+	client.KubernetesClusters = clustersService
+
+	instances := newInstances(client)
+	addresses, err := instances.NodeAddressesByProviderID(ctx, "serverscom://kubernetes-autoscale-node/9V8Mjm2p")
+
+	g.Expect(err).NotTo(BeNil())
+	g.Expect(err.Error()).To(Equal(`providerID "serverscom://kubernetes-autoscale-node/9V8Mjm2p" for node type kubernetes-autoscale-node is missing the cluster ID, expected serverscom://kubernetes-autoscale-node/<cluster_id>/<node_id>`))
+	g.Expect(addresses).To(BeNil())
+}
+
+func TestInstances_NodeAddressesByProviderIDWithUnknownType(t *testing.T) {
+	g := NewGomegaWithT(t)
+
+	ctx := context.TODO()
+
+	instances := newInstances(cli.NewClient("some"))
+	addresses, err := instances.NodeAddressesByProviderID(ctx, "serverscom://some-new-type/a")
+
+	g.Expect(err).NotTo(BeNil())
+	g.Expect(err.Error()).To(Equal("invalid instance type: some-new-type"))
+	g.Expect(addresses).To(BeNil())
+}
+
+func TestInstances_InstanceTypeByProviderIDWithAutoscaleNode(t *testing.T) {
+	g := NewGomegaWithT(t)
+
+	ctx := context.TODO()
+
+	instances := newInstances(cli.NewClient("some"))
+	instanceType, err := instances.InstanceTypeByProviderID(ctx, "serverscom://kubernetes-autoscale-node/X4bR2mQ9/9V8Mjm2p")
+
+	g.Expect(err).To(BeNil())
+	g.Expect(instanceType).To(Equal(kubernetesAutoscaleNodeType))
+}
+
+func TestInstances_InstanceExistsByProviderIDWithAutoscaleNode(t *testing.T) {
+	g := NewGomegaWithT(t)
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	ctx := context.TODO()
+
+	node := cli.KubernetesClusterNode{
+		ID:        "9V8Mjm2p",
+		ClusterID: "X4bR2mQ9",
+		Hostname:  "my-super-node1",
+	}
+
+	clustersService := serverscom_testing.NewMockKubernetesClustersService(ctrl)
+	clustersService.EXPECT().GetNode(ctx, "X4bR2mQ9", "9V8Mjm2p").Return(&node, nil)
+
+	client := cli.NewClient("some")
+	client.KubernetesClusters = clustersService
+
+	instances := newInstances(client)
+	exists, err := instances.InstanceExistsByProviderID(ctx, "serverscom://kubernetes-autoscale-node/X4bR2mQ9/9V8Mjm2p")
+
+	g.Expect(err).To(BeNil())
+	g.Expect(exists).To(Equal(true))
+}
+
+// A node removed by a scale-down must be reported as non-existent, not as an error,
+// so that kubernetes can clean up the Node object.
+func TestInstances_InstanceExistsByProviderIDWithAutoscaleNodeNotFound(t *testing.T) {
+	g := NewGomegaWithT(t)
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	ctx := context.TODO()
+
+	clustersService := serverscom_testing.NewMockKubernetesClustersService(ctrl)
+	clustersService.EXPECT().GetNode(ctx, "X4bR2mQ9", "9V8Mjm2p").Return(nil, &cli.NotFoundError{})
+
+	client := cli.NewClient("some")
+	client.KubernetesClusters = clustersService
+
+	instances := newInstances(client)
+	exists, err := instances.InstanceExistsByProviderID(ctx, "serverscom://kubernetes-autoscale-node/X4bR2mQ9/9V8Mjm2p")
+
+	g.Expect(err).To(BeNil())
+	g.Expect(exists).To(Equal(false))
+}
+
+// Any other API error must be propagated without concluding anything about existence.
+func TestInstances_InstanceExistsByProviderIDWithAutoscaleNodeError(t *testing.T) {
+	g := NewGomegaWithT(t)
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	ctx := context.TODO()
+
+	clustersService := serverscom_testing.NewMockKubernetesClustersService(ctrl)
+	clustersService.EXPECT().GetNode(ctx, "X4bR2mQ9", "9V8Mjm2p").Return(nil, &cli.InternalServerError{Message: "some error"})
+
+	client := cli.NewClient("some")
+	client.KubernetesClusters = clustersService
+
+	instances := newInstances(client)
+	exists, err := instances.InstanceExistsByProviderID(ctx, "serverscom://kubernetes-autoscale-node/X4bR2mQ9/9V8Mjm2p")
+
+	g.Expect(err).NotTo(BeNil())
+	g.Expect(err.Error()).To(ContainSubstring("can't get kubernetes autoscale node:"))
+	g.Expect(exists).To(Equal(false))
+}
+
+func TestInstances_InstanceExistsByProviderIDWithAutoscaleNodeMissingClusterID(t *testing.T) {
+	g := NewGomegaWithT(t)
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	ctx := context.TODO()
+
+	clustersService := serverscom_testing.NewMockKubernetesClustersService(ctrl)
+
+	client := cli.NewClient("some")
+	client.KubernetesClusters = clustersService
+
+	instances := newInstances(client)
+	exists, err := instances.InstanceExistsByProviderID(ctx, "serverscom://kubernetes-autoscale-node/9V8Mjm2p")
+
+	g.Expect(err).NotTo(BeNil())
+	g.Expect(err.Error()).To(Equal(`providerID "serverscom://kubernetes-autoscale-node/9V8Mjm2p" for node type kubernetes-autoscale-node is missing the cluster ID, expected serverscom://kubernetes-autoscale-node/<cluster_id>/<node_id>`))
+	g.Expect(exists).To(Equal(false))
+}
+
+func TestInstances_InstanceExistsByProviderIDWithUnknownType(t *testing.T) {
+	g := NewGomegaWithT(t)
+
+	ctx := context.TODO()
+
+	instances := newInstances(cli.NewClient("some"))
+	exists, err := instances.InstanceExistsByProviderID(ctx, "serverscom://some-new-type/a")
+
+	g.Expect(err).NotTo(BeNil())
+	g.Expect(err.Error()).To(Equal("invalid instance type: some-new-type"))
+	g.Expect(exists).To(Equal(false))
+}
+
+// An autoscale node has no power state, so an existing one is never shut down.
+func TestInstances_InstanceShutdownByProviderIDWithAutoscaleNode(t *testing.T) {
+	g := NewGomegaWithT(t)
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	ctx := context.TODO()
+
+	node := cli.KubernetesClusterNode{
+		ID:        "9V8Mjm2p",
+		ClusterID: "X4bR2mQ9",
+		Hostname:  "my-super-node1",
+	}
+
+	clustersService := serverscom_testing.NewMockKubernetesClustersService(ctrl)
+	clustersService.EXPECT().GetNode(ctx, "X4bR2mQ9", "9V8Mjm2p").Return(&node, nil)
+
+	client := cli.NewClient("some")
+	client.KubernetesClusters = clustersService
+
+	instances := newInstances(client)
+	isShutdown, err := instances.InstanceShutdownByProviderID(ctx, "serverscom://kubernetes-autoscale-node/X4bR2mQ9/9V8Mjm2p")
+
+	g.Expect(err).To(BeNil())
+	g.Expect(isShutdown).To(Equal(false))
+}
+
+func TestInstances_InstanceShutdownByProviderIDWithAutoscaleNodeError(t *testing.T) {
+	g := NewGomegaWithT(t)
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	ctx := context.TODO()
+
+	clustersService := serverscom_testing.NewMockKubernetesClustersService(ctrl)
+	clustersService.EXPECT().GetNode(ctx, "X4bR2mQ9", "9V8Mjm2p").Return(nil, errors.New("some error"))
+
+	client := cli.NewClient("some")
+	client.KubernetesClusters = clustersService
+
+	instances := newInstances(client)
+	isShutdown, err := instances.InstanceShutdownByProviderID(ctx, "serverscom://kubernetes-autoscale-node/X4bR2mQ9/9V8Mjm2p")
+
+	g.Expect(err).NotTo(BeNil())
+	g.Expect(err.Error()).To(Equal("can't get kubernetes autoscale node: some error"))
+	g.Expect(isShutdown).To(Equal(false))
+}
+
+func TestInstances_InstanceShutdownByProviderIDWithUnknownType(t *testing.T) {
+	g := NewGomegaWithT(t)
+
+	ctx := context.TODO()
+
+	instances := newInstances(cli.NewClient("some"))
+	isShutdown, err := instances.InstanceShutdownByProviderID(ctx, "serverscom://some-new-type/a")
+
+	g.Expect(err).NotTo(BeNil())
+	g.Expect(err.Error()).To(Equal("invalid instance type: some-new-type"))
+	g.Expect(isShutdown).To(Equal(true))
 }
